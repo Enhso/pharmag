@@ -1,27 +1,13 @@
 import asyncio
-import zlib
 from types import SimpleNamespace
 
 import numpy as np
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from fakes import DIMS, FakeEmbedder
 from pharmag.index import Index, OpenAIEmbedder, embedding_text
 from pharmag.models import Chunk
-
-DIMS = 32
-
-
-class FakeEmbedder:
-    """Bag of hashed tokens: equal texts give equal vectors, shared words give similar ones."""
-
-    async def embed(self, texts):
-        out = np.zeros((len(texts), DIMS), dtype=np.float32)
-        for row, text in enumerate(texts):
-            for token in text.lower().split():
-                out[row, zlib.crc32(token.encode()) % DIMS] += 1
-        return out
-
 
 class SameVectorEmbedder:
     """Every text gets the same vector, so the dense ranking is chunk order."""
