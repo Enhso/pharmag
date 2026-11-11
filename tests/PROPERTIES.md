@@ -21,3 +21,18 @@ Hypothesis runs the config tests on many generated environments, so one line cov
 11. The API key value never appears in `/health` or `/ask` responses, including when the key is defective. `test_health_is_degraded_but_200_with_invalid_config`, `test_ask_is_503_and_names_the_bad_variables_with_invalid_config` (`tests/test_api.py`)
 12. No file in the static folder refers to another host. `test_the_page_loads_nothing_from_another_host` (`tests/test_api.py`)
 13. `GET /` serves the page and its CSS and JavaScript from the same server. `test_root_serves_the_page_and_its_assets` (`tests/test_api.py`)
+
+## Corpus parser (`load_corpus`)
+
+Hypothesis builds small synthetic documents (a title, an optional source line, headings at levels 2 to 5, blocks of lines, some very long) and checks these on each.
+
+14. Every line that is not blank, not a heading, and not the title or source line lies in exactly one chunk, so no text is lost or repeated. `test_every_body_line_is_in_exactly_one_chunk` (`tests/test_corpus.py`)
+15. A chunk's `text` is exactly the file's lines from `line_start` to `line_end` joined with newlines, and its `id` is `<file>#L<start>-<end>`, so a quote can be checked against the file. `test_text_is_the_files_lines_verbatim` (`tests/test_corpus.py`)
+16. Chunks come in file order, never overlap, and have unique IDs. `test_chunks_are_ordered_disjoint_and_uniquely_named` (`tests/test_corpus.py`)
+17. No chunk is longer than 5,000 characters unless it is a single line. `test_chunks_respect_the_size_cap_unless_one_line` (`tests/test_corpus.py`)
+18. No chunk contains a heading line, and every chunk starts and ends on a non-blank line. `test_no_chunk_contains_a_heading_or_blank_edge` (`tests/test_corpus.py`)
+19. A chunk's `heading_path` is the stack of headings above its text: a heading replaces the headings at its own level and deeper. `test_heading_path_is_the_heading_stack` (`tests/test_corpus.py`)
+20. Parsing the same directory twice gives equal results. `test_parsing_twice_gives_the_same_chunks` (`tests/test_corpus.py`)
+21. A file name that is not `dailymed-<drug>`, `medlineplus-<drug>` or `GLOSSARY` raises an error that names the file. `test_unknown_file_name_is_rejected_by_name` (`tests/test_corpus.py`)
+22. In the real corpus, a run of consecutive lines holding a ` | ` table is never split across chunks. `test_no_table_block_is_split` (`tests/test_corpus.py`)
+23. In the real corpus, every top-level heading maps to a section key, or is on a short list in the test of headings left unmapped on purpose. `test_every_top_level_heading_is_mapped_or_listed` (`tests/test_corpus.py`)
