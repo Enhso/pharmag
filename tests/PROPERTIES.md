@@ -12,6 +12,19 @@ Hypothesis runs the config tests on many generated environments, so one line cov
 5. When a required variable is missing and the environment holds an `OPENAI_*` name that is the real name with one character deleted, the problem text names that near-miss. `test_a_misspelled_name_is_named_when_the_real_one_is_missing` (`tests/test_config.py`)
 6. An unrelated `OPENAI_*` variable, or another required variable, is never offered as a misspelling. `test_other_openai_names_are_not_taken_for_misspellings` (`tests/test_config.py`)
 
+## Search index (Index.search)
+
+The index tests use a fake embedder that hashes words into 32 numbers, so they need no network. Hypothesis builds many random chunk lists and queries.
+
+I1. Every returned chunk matches every filter given (`drug`, `source`, `section`). `test_every_hit_satisfies_every_filter` (`tests/test_index.py`)
+I2. A search returns at most `k` hits, never the same chunk twice, and the scores never go up from one hit to the next. `test_at_most_k_distinct_hits_in_non_increasing_score_order` (`tests/test_index.py`)
+I3. A chunk ranked first by the vector comparison and first by the keyword (BM25) ranking is the first result. `test_first_in_both_rankings_is_first_overall` (`tests/test_index.py`)
+I4. Searching with a chunk's own embedding text returns that chunk first, when no other chunk has the same vector. `test_searching_a_chunks_own_text_returns_it_first` (`tests/test_index.py`)
+I5. Every stored embedding has length 1, so a dot product equals cosine similarity. `test_stored_rows_have_unit_length` (`tests/test_index.py`)
+I6. `OpenAIEmbedder.embed` returns one row per text in input order, for any number of texts, batch size and concurrency, even when the server answers batches or rows out of order, and never sends a batch larger than the batch size. `test_openai_embedder_keeps_input_order` (`tests/test_index.py`)
+I7. Building twice from the same chunks and searching gives identical results. `test_building_twice_gives_equal_results` (`tests/test_index.py`)
+I8. Examples: a rare exact token ("CYP3A4") puts its one chunk first even when the vector ranking is no help (`test_a_rare_exact_token_wins_even_when_dense_does_not_help`); a drug filter drops other drugs (`test_a_drug_filter_excludes_other_drugs`); no matching candidates gives an empty list (`test_no_candidates_gives_an_empty_list`); a query sharing no word with a chunk gives it no keyword rank (`test_a_query_with_no_lexical_overlap_has_no_bm25_rank`) (`tests/test_index.py`)
+
 ## Server and page
 
 7. The server starts and `GET /health` answers 200 whether the configuration is valid, defective or entirely absent. `test_health_is_ok_with_valid_config`, `test_health_is_degraded_but_200_with_invalid_config`, `test_server_starts_with_no_configuration_at_all` (`tests/test_api.py`)
