@@ -124,3 +124,58 @@ Decision IDs D1 to D12 refer to the scoping document.
 
 - **Decision.** The assistant commits and pushes after each verified step. The first push publishes `ai-config/` as it stood on 2026-11-11. Commit messages carry no co-author lines and end with the session link line that the harness requests.
 - **Rejected.** Local commits with a push on the owner's word, which was the recommendation. No commits by the assistant.
+
+## 2026-11-11, rulings on the architecture sketch
+
+Point numbers refer to the draft of `docs/architecture.md` that the owner reviewed. With these rulings the owner approved the sketch, which opens the core build (DEC-019).
+
+### DEC-021. Answer text: free prose from the writer
+
+- **Decision.** The writer model writes the answer as prose. The prose cites claims with numbered markers, and a claim list with quotes travels beside it.
+- **Rejected.** An answer that code renders from the checked claims, which was the recommendation.
+- **Reason.** The owner gave none. The cost the sketch named: a sentence can appear in the prose that no check saw. DEC-023 answers that cost.
+
+### DEC-022. Claims still unsupported after the retry: remove and report
+
+- **Decision.** A claim that is still unsupported after the retry round leaves the answer and is listed under `critic` in the response and the UI. An ambiguous claim stays in the answer with a visible caution.
+- **Rejected.** Keeping the unsupported claim in the answer with a flag.
+- **Reason.** The owner accepted the recommendation. The reason offered with it: the user never receives a claim the system knows is unsupported.
+
+### DEC-023. How a claim is removed from free prose
+
+- **Decision.** The writer gets one last call to rewrite the answer without the rejected claims. Code then confirms that every marker left in the prose points to a surviving claim. The critic also reads the prose and reports any statement that carries no marker.
+- **Rejected.** Code that deletes each sentence carrying the rejected claim's marker.
+- **Reason.** The owner accepted the recommendation. The reason offered with it: a deleted sentence can leave the surrounding prose reading oddly, and the marker check keeps the removal verifiable.
+
+### DEC-024. Index build: in the background
+
+- **Decision.** The server starts at once and builds the index in the background. `/health` returns 200 and reports `building`, `ready`, or `failed`. `/ask` waits for the index.
+- **Rejected.** Blocking startup until the index exists.
+- **Reason.** The owner accepted the recommendation. The reason offered with it: `/health` answers from the first second.
+
+### DEC-025. Names of the role overrides
+
+- **Decision.** `PHARMAG_PLANNER_MODEL`, `PHARMAG_WORKER_MODEL`, `PHARMAG_WRITER_MODEL`, and `PHARMAG_CRITIC_MODEL`. An unset name means `OPENAI_MODEL`.
+- **Rejected.** The same names without the prefix, which was the recommendation.
+- **Reason.** The owner gave none. The reason offered with the chosen option: a prefixed name cannot collide with another variable in the graders' environment.
+
+### DEC-026. Starting limits
+
+- **Decision.** Six workers at once, ten tool calls per worker, one retry round. The measured latency and cost from the eval script decide the final numbers.
+- **Rejected.** Four workers and six tool calls, which was the recommendation. Three workers and four tool calls.
+- **Reason.** The owner gave none.
+
+### DEC-027. The four public questions are tracked verbatim
+
+- **Decision.** The eval file holds the four public questions word for word. This is an exception to DEC-002 for those four sentences only.
+- **Rejected.** A gitignored file with the verbatim text.
+- **Reason.** The owner accepted the recommendation. The reason offered with it: reviewers type these questions into the UI anyway.
+
+### DEC-028. Next stretch of work
+
+- **Decision.** The assistant builds the eval set, the corpus parser, retrieval, and the tools, and checks in with the owner before the agents.
+- **Rejected.** Building through a working `/ask` before the check-in. Writing only the eval set.
+
+### Point 5 of the sketch needed no new ruling
+
+DEC-012 already gives every well-formed question a 200, refusals included. An out-of-scope question gets a short refusal with the disclaimer.
