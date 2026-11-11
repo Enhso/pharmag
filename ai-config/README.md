@@ -19,7 +19,11 @@ The plugin registry lists pstack 0.9.135 as installed. The session loaded the sk
 
 ## MCP servers used
 
-None so far. When a session first uses an MCP server, its entry goes into `mcp.json` in this folder.
+`mcp.json` in this folder holds the entry for each server, with credentials replaced by a variable reference.
+
+| Server | Used for | First used |
+|---|---|---|
+| context7 | Current PydanticAI 2.0 docs, read before the architecture sketch. Current DeepEval docs, read before the eval step. Current uv and FastAPI docs, read by the builder subagent before the skeleton | 2026-11-11 |
 
 The sessions also used tools that are neither skills nor MCP servers: Claude Code's built-in web search, Docker, and `curl`.
 
@@ -31,7 +35,7 @@ The sessions also used tools that are neither skills nor MCP servers: Claude Cod
 | `agents/verifier.md` | Subagent that checks finished work against the plan |
 | `pstack-models.md` | Which model and effort each pstack role runs on |
 
-No subagent has run yet.
+The `builder` agent wrote the walking skeleton on 2026-11-11. The session stopped it before its report, so the main session read every file and ran the checks itself. A web-fetch helper read one upstream license file.
 
 ## CLAUDE.md files
 

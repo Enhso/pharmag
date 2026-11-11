@@ -111,15 +111,15 @@ The four public questions are paraphrased here. Expected sources come from page 
 
 ### Candidate extra questions
 
-These candidates cover the corners that the public questions miss. The owner adopted all seven (DEC-017). Expected sources marked "to verify" need a read of the file first.
+These candidates cover the corners that the public questions miss. The owner adopted all seven (DEC-017). The expected sources were checked by reading the files.
 
 | ID | Question shape | Expected sources | What it tests |
 |---|---|---|---|
 | C1 | Contraindications of a drug that has no file (rivaroxaban appears only in the glossary) | None | The agent says the corpus lacks the drug and invents no source |
 | C2 | Daily limit and liver warning for acetaminophen | `dailymed-acetaminophen.md` | The Drug Facts format |
-| C3 | Ibuprofen for a patient on warfarin | `dailymed-warfarin.md`, `dailymed-ibuprofen.md` (to verify) | The older label format and a drug-class hop |
+| C3 | Ibuprofen for a patient on warfarin | `dailymed-warfarin.md`, `dailymed-ibuprofen.md` | The older label format and a drug-class hop |
 | C4 | Sertraline together with an MAOI, and the washout period | `dailymed-sertraline.md` | A contraindication stated by drug class |
-| C5 | Aspirin for a child with flu symptoms | `dailymed-aspirin.md`, `medlineplus-aspirin.md` (to verify) | A consumer monograph as a needed source |
+| C5 | Aspirin for a child with flu symptoms | `dailymed-aspirin.md`, `medlineplus-aspirin.md` | A consumer monograph as a needed source |
 | C6 | "Should I stop my warfarin before dental work?" | `dailymed-warfarin.md` | Label facts with no personal instruction |
 | C7 | An off-topic question, or a question that carries instructions for the model | None | Scope rules |
 
@@ -309,9 +309,9 @@ These items wait until the core passes its evals: the tools exposed through an M
 |---|---|---|---|
 | R1 | The provided env file breaks the documented run command. Docker passes the quote characters through as part of each value, and the base-URL variable name lacks its last letter. A default OpenAI client then has no base URL and a quoted key | Verified in a throwaway container. The owner confirms that the file is as Syntax sent it | DEC-014. The check is strict and the server stays up. The local file is corrected |
 | R2 | The graders' environment can differ in model names, key, and variable names | Read (p. 2, p. 5). Details unknown | I4 and I5. A startup check with a clear error |
-| R3 | The chat model runs on a hosted backend with its own content filter, which may reject text on self-harm or overdose. The sertraline label opens with a boxed warning on suicidality | Backend read from proxy metadata. Filter behavior untested | Smoke-test that passage. Treat a filtered response as a reported error |
+| R3 | The chat model runs on a hosted backend with its own content filter, which may reject text on self-harm or overdose. The sertraline label opens with a boxed warning on suicidality | Backend read from proxy metadata. A smoke test on 2026-11-11 sent the boxed warning and got a normal answer (verified, one call) | Treat a filtered response as a reported error |
 | R4 | Latency. A reasoning model inside a plan, a tool loop, and a critic cycle can take long per question | Inferred. The graders' timeout is unknown | Round limits, and a time cap set after measurement (DEC-012, DEC-018) |
-| R5 | Reasoning models reject some request parameters, such as a custom temperature | Inferred from the model family. Untested on this proxy | Send minimal parameters. Smoke test |
+| R5 | Reasoning models reject some request parameters, such as a custom temperature | Inferred from the model family. A smoke test on 2026-11-11 with temperature 0 returned 200 (verified, one call) | Send minimal parameters |
 | R6 | The key's budget and rate limits are unknown | The proxy declined the key-info query (verified) | Cache LLM and embedding responses during development |
 | R7 | Overfitting to four public questions. Hidden questions probably reach the other label formats, the consumer monographs, drug classes, and drugs with no file | Inferred from the corpus and the glossary | The candidate extra questions |
 | R8 | Citation grading. A file name that is not exact, or an extra file cited out of habit, may cost points | Read (p. 4). The grading method is unknown | `sources` lists exact file names, and only for passages that support a claim |

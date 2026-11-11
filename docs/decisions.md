@@ -108,7 +108,7 @@ Decision IDs D1 to D12 refer to the scoping document.
 
 ### DEC-017. Extra evaluation questions: all seven
 
-- **Decision.** Candidates C1 to C7 join the eval set. The expected sources of C3 and C5 still need a read of the files.
+- **Decision.** Candidates C1 to C7 join the eval set. The assistant read the files afterwards and confirmed the expected sources of C3 and C5.
 
 ### DEC-018. No questions to Syntax
 
