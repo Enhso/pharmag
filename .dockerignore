@@ -1,0 +1,11 @@
+.env
+.env.*
+.git
+.venv
+__pycache__
+.pytest_cache
+.hypothesis
+ai-config/
+defense-brief.md
+docs/assignment-pharma.pdf
+tests/

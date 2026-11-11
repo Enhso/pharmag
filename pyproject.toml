@@ -1,0 +1,20 @@
+[project]
+name = "pharmag"
+version = "0.1.0"
+description = "Pharmacology research assistant"
+requires-python = "==3.15.*"
+dependencies = [
+    "fastapi==0.162.4",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2==2.16.0",
+    "hypothesis==6.170.15",
+    "pytest==9.2.0",
+]
+
+[build-system]
+requires = ["uv_build==0.13.7"]
+build-backend = "uv_build"
