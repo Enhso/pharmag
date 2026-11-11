@@ -222,3 +222,6 @@ __marimo__/
 # Assignment brief (marked confidential) and private interview notes
 docs/assignment-pharma.pdf
 defense-brief.md
+
+# Scratch worktrees of coding agents
+.claude/worktrees/

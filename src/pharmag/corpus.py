@@ -1,7 +1,8 @@
 import re
 from pathlib import Path
+from typing import cast
 
-from pharmag.models import Chunk
+from pharmag.models import Chunk, Source
 
 MAX_CHARS = 5000
 
@@ -66,16 +67,16 @@ def load_corpus(directory: Path) -> list[Chunk]:
     return chunks
 
 
-def _file_identity(path: Path) -> tuple[str, str | None]:
+def _file_identity(path: Path) -> tuple[Source, str | None]:
     if path.stem == "GLOSSARY":
         return "glossary", None
     m = _FILE_NAME.fullmatch(path.stem)
     if m is None:
         raise ValueError(f"unrecognised corpus file name: {path.name}")
-    return m[1], m[2]
+    return cast(Source, m[1]), m[2]
 
 
-def _file_chunks(file: str, source: str, drug: str | None, lines: list[str]) -> list[Chunk]:
+def _file_chunks(file: str, source: Source, drug: str | None, lines: list[str]) -> list[Chunk]:
     chunks = []
     for path, start, end in _sections(lines):
         body = [i for i in range(start, end) if lines[i].strip()]
@@ -86,7 +87,7 @@ def _file_chunks(file: str, source: str, drug: str | None, lines: list[str]) -> 
                     id=f"{file}#L{a + 1}-{b + 1}",
                     file=file,
                     drug=drug,
-                    source=source,  # type: ignore[arg-type]
+                    source=source,
                     section=section,
                     heading_path=path,
                     line_start=a + 1,
