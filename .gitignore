@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Assignment brief (marked confidential) and private interview notes
+docs/assignment-pharma.pdf
+defense-brief.md
