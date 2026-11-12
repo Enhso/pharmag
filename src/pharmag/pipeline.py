@@ -12,7 +12,7 @@ from pydantic_ai import UsageLimits
 from pharmag.agents import RoleModels, WorkerDeps, build_models, critic, planner, redactor, worker, writer
 from pharmag.config import Settings
 from pharmag.corpus import load_corpus
-from pharmag.grounding import dangling_markers, drop_dangling, failed_claims, markers
+from pharmag.grounding import dangling_markers, drop_dangling, drop_sentences, failed_claims, markers, sentences_with
 from pharmag.index import Index, OpenAIEmbedder
 from pharmag.models import (
     AskResponse,
@@ -32,6 +32,9 @@ from pharmag.models import (
 )
 from pharmag.tools import Tools, _section_path
 
+NOTHING_SUPPORTED = (
+    "The documents did not support any claim for this question; the removed claims are listed in the critic report."
+)
 DISCLAIMER = (
     "This is general information from a small set of documents, not medical advice. "
     "Ask a doctor or pharmacist about your own treatment."
@@ -172,7 +175,7 @@ async def _research(req: _Request, stage: Stage, tasks: list[tuple[str, str]]) -
     return [
         (
             label,
-            Findings(findings=[], not_found=f"The research failed: {type(r).__name__}: {r}")
+            Findings(findings=[], not_found=f"The research failed: {type(r).__name__}")  # no message: it may echo a key
             if isinstance(r, Exception)
             else r,
         )
@@ -213,9 +216,11 @@ async def _check(req: _Request, draft: Draft) -> tuple[list[ClaimVerdict], list[
             critic,
             f"Answer text:\n{draft.answer}\n\nClaims:\n{_claims_text(draft)}\n\nCited passages:\n{passages}",
         )
+    worst = {"supported": 0, "ambiguous": 1, "unsupported": 2}
     given: dict[int, ClaimVerdict] = {}
-    for v in review.verdicts:
-        given.setdefault(v.claim, v)
+    for v in review.verdicts:  # two verdicts for one claim: the worst status wins
+        if v.claim not in given or worst[v.status] > worst[given[v.claim].status]:
+            given[v.claim] = v
     verdicts = []
     for n, claim in enumerate(draft.claims, 1):
         if n in failed:
@@ -264,6 +269,7 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
 
     async with req.stage("research"):
         tasks = [(sq.text, f"{sq.text}\nDrugs concerned: {', '.join(sq.drugs)}") for sq in plan.sub_questions]
+        tasks = tasks or [(question, question)]  # an in-scope plan with no sub-questions: research the question itself
         pairs = await _research(req, "research", tasks)
     async with req.stage("write"):
         draft = await req.run("writer", writer, f"Question: {question}\n\nFindings:\n{_findings_text(pairs)}")
@@ -271,26 +277,32 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
     rounds = 1
 
     for _ in range(MAX_RETRY_ROUNDS):
-        queries = list(dict.fromkeys([v.follow_up or "" for v in _unsupported(verdicts)] + unmarked))
+        wanted = [v.follow_up or "" for v in _unsupported(verdicts)] + unmarked
+        queries = list(dict.fromkeys(q for q in wanted if q.strip()))
         if not queries:
             break
-        async with req.stage("retry"):
-            pairs += await _research(req, "retry", [(q, q) for q in queries[:MAX_WORKERS]])
-            problems = "\n".join(f"[{v.claim}] {v.status}: {v.reason}" for v in verdicts)
-            draft = await req.run(
-                "writer",
-                writer,
-                f"Question: {question}\n\nFindings, old and new:\n{_findings_text(pairs)}\n\n"
-                f"Previous draft:\n{draft.answer}\n{_claims_text(draft)}\n\nVerdicts on its claims:\n{problems}\n\n"
-                "Statements with no marker:\n" + "\n".join(f"- {u}" for u in unmarked) + "\n\n"
-                "Write a revised draft. Support each unsupported claim with the findings, or leave it out when the "
-                "findings do not support it. Give every factual sentence a marker.",
-            )
+        try:
+            async with req.stage("retry"):
+                pairs += await _research(req, "retry", [(q, q) for q in queries[:MAX_WORKERS]])
+                problems = "\n".join(f"[{v.claim}] {v.status}: {v.reason}" for v in verdicts)
+                draft = await req.run(
+                    "writer",
+                    writer,
+                    f"Question: {question}\n\nFindings, old and new:\n{_findings_text(pairs)}\n\n"
+                    f"Previous draft:\n{draft.answer}\n{_claims_text(draft)}\n\nVerdicts on its claims:\n{problems}\n\n"
+                    "Statements with no marker:\n" + "\n".join(f"- {u}" for u in unmarked) + "\n\n"
+                    "Write a revised draft. Support each unsupported claim with the findings, or leave it out when the "
+                    "findings do not support it. Give every factual sentence a marker.",
+                )
+        except PipelineError as e:  # DEC-007: the first draft ships with the flags that remain
+            log.warning("the retry round failed; answering from the first round: %s", e)
+            break
         verdicts, unmarked = await _check(req, draft)
         rounds += 1
 
     prose = draft.answer
-    if _unsupported(verdicts) or unmarked:
+    redacted = bool(_unsupported(verdicts) or unmarked)
+    if redacted:
         async with req.stage("redact"):
             removed = "\n".join(f"[{v.claim}] {draft.claims[v.claim - 1].text}" for v in _unsupported(verdicts))
             prose = await req.run(
@@ -306,8 +318,14 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
         by_claim = {v.claim: v for v in verdicts}
         surviving = {n for n, v in by_claim.items() if v.status != "unsupported"}
         marker_check = "passed"
+        if redacted:  # the redactor's output is not trusted: a known-unsupported sentence kept word for word goes
+            banned = [*sentences_with(draft.answer, {n for n in by_claim if n not in surviving}), *unmarked]
+            if (kept := drop_sentences(prose, banned)) != prose.strip():
+                prose, marker_check = kept, "repaired"
         if dangling_markers(prose, surviving):
             prose, marker_check = drop_dangling(prose, surviving), "repaired"
+        if not prose.strip():
+            prose = NOTHING_SUPPORTED
         cited = [n for n in dict.fromkeys(markers(prose)) if n in surviving]
         citations = [
             SourceCitation(

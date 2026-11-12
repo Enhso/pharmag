@@ -69,7 +69,8 @@ def test_markers_returns_the_numbers_written_into_the_prose_in_order(parts, comm
     assert markers(prose) == expected
 
 
-sentence = st.tuples(st.lists(word, min_size=1, max_size=5), st.lists(numbers, max_size=2))
+# "vs" is left out: a sentence ending in "vs." does not end there, by design
+sentence = st.tuples(st.lists(word.filter(lambda w: w != "vs"), min_size=1, max_size=5), st.lists(numbers, max_size=2))
 
 
 @given(st.lists(sentence, max_size=8), st.sets(numbers, max_size=10))

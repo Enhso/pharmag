@@ -8,7 +8,7 @@ _MARKER = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 _LEADING_MARKERS = re.compile(rf"{_MARKER.pattern}(?:\s*{_MARKER.pattern})*")
 # A sentence ends after . ! ? plus whitespace when a new sentence starts there, and never right after an abbreviation.
 _SENTENCE_BREAK = re.compile(
-    r"((?<=[.!?])(?<!e\.g\.)(?<!i\.e\.)(?<!St\.)(?<!vs\.)(?<!Dr\.)\s+(?=[A-Z0-9\[(]|-\s)|\n+)"
+    r"((?<=[.!?])(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bSt\.)(?<!\bvs\.)(?<!\bDr\.)\s+(?=[A-Z0-9\[(]|-\s)|\n+)"
 )
 
 
