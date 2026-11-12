@@ -195,3 +195,18 @@ DEC-012 already gives every well-formed question a 200, refusals included. An ou
 - **Decision.** Preserve the prior property-review findings in `tests/PROPERTIES_findings.md` and point to that authoritative detailed review from `docs/handoff.md`, so the next agent can pick up the follow-up.
 - **Source.** The owner's request: "Saved these findings in `tests/PROPERTIES_findings.md` file so we can address them (and update the handoff to make sure the next agent picks it up)."
 - **Scope.** Approval to record and hand off only. This does not approve the property contracts, authorize implementation of the recommendations, or settle unresolved contract questions. Those still require owner confirmation.
+
+## 2026-11-12, second working session
+
+### DEC-031. A working proof of concept this session
+
+- **Decision.** The session ends with a container that already meets the brief end to end, pushed to `main`, as the fallback submission. This is the go-ahead for the agents step that DEC-028 asked for. The owner also asked for a visual overview of the project for the presentation, to be made once the proof of concept works.
+- **Owner's words.** "i want to have a working poc at the end of this session which would be the lowest possible deliverable, in case things go awry tomorrow."
+- **Assistant's reading, open to the owner's veto.** The proof of concept is the approved pipeline of `docs/architecture.md` with every stage, a plain page, a short README, and an `.env.example`. The answer eval with DeepEval, the streaming endpoint, the design pass, and the property-review follow-ups wait for the next session.
+- **Assistant's choices, open to the owner's veto.**
+  - The `answer` text ends with three blocks that code builds: the cautions, a numbered source list that maps each marker to its file, section, and lines, and the disclaimer. A grader who reads only `answer` then sees the exact file names and the disclaimer.
+  - A corpus file counts as a source only when a claim that cites it is still in the final prose.
+  - A citation must point to a passage that a tool returned during the same request.
+  - When the redacted prose still carries a marker of a removed claim, code drops the sentence that carries it and reports `marker_check: repaired`.
+  - A stage that fails gives HTTP 502 with the stage name. A failed index build gives 503, and the next question starts the build again.
+  - The worker's typed output has no `sub_question` field. Code pairs each result with its sub-question.

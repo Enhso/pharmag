@@ -9,6 +9,7 @@ dependencies = [
     "numpy==2.5.4",
     "bm25s==0.3.16",
     "openai==3.49.0",
+    "pydantic-ai-slim[openai]==2.67.0",
 ]
 
 [dependency-groups]
