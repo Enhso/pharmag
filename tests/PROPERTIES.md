@@ -35,6 +35,18 @@ I8. Examples: a rare exact token ("CYP3A4") puts its one chunk first even when t
 12. No file in the static folder refers to another host. `test_the_page_loads_nothing_from_another_host` (`tests/test_api.py`)
 13. `GET /` serves the page and its CSS and JavaScript from the same server. `test_root_serves_the_page_and_its_assets` (`tests/test_api.py`)
 
+## Retrieval eval baseline (`evals/retrieval_eval.py`, `evals/embedding_cache.py`)
+
+The baseline cuts each file into fixed windows of characters. Hypothesis builds short texts from the letters a and b and newlines, with small window sizes and overlaps, so one text gives many windows and many line breaks.
+
+R1. Every character of the text lies in at least one window. `test_every_character_is_in_a_window` (`tests/test_retrieval_eval.py`)
+R2. No window is empty or longer than the window size. `test_no_window_is_empty_or_longer_than_the_size` (`tests/test_retrieval_eval.py`)
+R3. Each window overlaps the next by exactly the overlap, and ends later than the one before, so the last window is never a copy of the tail of the one before it. `test_consecutive_windows_overlap_by_exactly_the_overlap` (`tests/test_retrieval_eval.py`)
+R4. A window's line range is exactly the lines its characters touch, where a newline belongs to the line it ends. `test_the_line_range_is_the_lines_the_characters_touch` (`tests/test_retrieval_eval.py`)
+R5. In the real corpus, every baseline chunk has a unique ID, its text lies inside the file lines it names (counted as the parser counts them), and it carries the drug and source the parser gave that file, with no section and no heading path. `test_baseline_chunks_sit_on_the_parsers_lines_and_keep_its_labels` (`tests/test_retrieval_eval.py`)
+R6. For any list of texts, the caching embedder returns the same rows as the embedder it wraps, in input order, and sends each distinct text to the wrapped embedder once, so a second call sends nothing. `test_the_cache_returns_the_wrapped_rows_and_sends_each_text_once` (`tests/test_retrieval_eval.py`)
+R7. Vectors stored under one model name are never used for another model name. `test_a_different_model_does_not_reuse_stored_vectors` (`tests/test_retrieval_eval.py`)
+
 ## Corpus parser (`load_corpus`)
 
 Hypothesis builds small synthetic documents (a title, an optional source line, headings at levels 2 to 5, blocks of lines, some very long) and checks these on each.
