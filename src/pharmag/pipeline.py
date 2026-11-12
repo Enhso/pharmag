@@ -9,7 +9,7 @@ from pathlib import Path
 from openai import AsyncOpenAI
 from pydantic_ai import UsageLimits
 
-from pharmag.agents import RoleModels, WorkerDeps, build_models, critic, planner, worker, writer
+from pharmag.agents import RoleModels, WorkerDeps, build_models, critic, planner, redactor, worker, writer
 from pharmag.config import Settings
 from pharmag.corpus import load_corpus
 from pharmag.grounding import dangling_markers, drop_dangling, failed_claims, markers
@@ -295,12 +295,11 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
             removed = "\n".join(f"[{v.claim}] {draft.claims[v.claim - 1].text}" for v in _unsupported(verdicts))
             prose = await req.run(
                 "writer",
-                writer,
+                redactor,
                 "Rewrite this answer without the claims and statements listed below. Keep every other sentence, "
                 "and keep each marker's number as it is; do not renumber. Return only the prose.\n\n"
                 f"Answer:\n{draft.answer}\n\nClaims to remove:\n{removed or '(none)'}\n\n"
                 "Statements to remove:\n" + "\n".join(f"- {u}" for u in unmarked),
-                output_type=str,
             )
 
     async with req.stage("respond"):

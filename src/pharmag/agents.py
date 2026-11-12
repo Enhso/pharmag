@@ -1,12 +1,13 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from pharmag.config import Settings
+from pharmag.grounding import dangling_markers
 from pharmag.models import Chunk, Draft, Findings, Plan, Review, ToolCall, ToolHit
 from pharmag.tools import ToolResult, Tools
 
@@ -94,6 +95,12 @@ could find the missing evidence.
 equating two differently worded items, a unit mismatch, or applying a statement about a population to one \
 patient. Say in the reason what the interpretation is.
 
+When a claim says that two documents agree, for example that an item is "shared", "common to both", "the \
+same", or that "both" list it, and the passages word the item differently, the verdict is ambiguous, because \
+equating two wordings is a clinical judgment the passages do not make. Quote the two wordings in the reason. A \
+claim that only reports each document's own wording side by side, without saying they are the same, stays \
+supported.
+
 Also list in unmarked every factual statement in the answer text that carries no [n] marker, copied from the \
 text. A statement that the documents lack some information, a restated question, and connective text are not \
 unmarked statements."""
@@ -137,7 +144,22 @@ worker = Agent(
     output_type=Findings, deps_type=WorkerDeps, instructions=WORKER_INSTRUCTIONS, retries={"output": 2}
 )
 writer = Agent(output_type=Draft, instructions=WRITER_INSTRUCTIONS, retries={"output": 2})
+# A run-level output_type is refused on an agent with output validators, so the redaction run has its own agent.
+redactor = Agent(output_type=str, instructions=WRITER_INSTRUCTIONS, retries={"output": 2})
 critic = Agent(output_type=Review, instructions=CRITIC_INSTRUCTIONS, retries={"output": 2})
+
+
+@writer.output_validator
+def _writer_markers_have_claims(ctx: RunContext[None], output: Draft) -> Draft:
+    claims = len(output.claims)
+    dangling = sorted(set(dangling_markers(output.answer, range(1, claims + 1))))
+    # On the last allowed retry another ModelRetry would fail the request; stage 8 repairs the draft instead.
+    if dangling and ctx.retry < ctx.max_retries:
+        raise ModelRetry(
+            f"The answer cites markers {dangling} but the claims list has only {claims} claims. "
+            "Add the missing claims or correct the markers."
+        )
+    return output
 
 
 @planner.instructions
