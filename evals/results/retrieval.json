@@ -1,0 +1,226 @@
+{
+  "date": "2026-11-12",
+  "embedding_model": "text-embedding-3-small",
+  "k": 6,
+  "window_size": 1000,
+  "window_overlap": 200,
+  "chunk_counts": {
+    "ours": 451,
+    "baseline": 582
+  },
+  "gold_files": [
+    {
+      "id": "P1",
+      "file": "dailymed-warfarin.md",
+      "ranks": {
+        "ours": {
+          "question": 1,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 1,
+          "question+drug": 1
+        }
+      }
+    },
+    {
+      "id": "P2",
+      "file": "dailymed-warfarin.md",
+      "ranks": {
+        "ours": {
+          "question": 3,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 6,
+          "question+drug": 2
+        }
+      }
+    },
+    {
+      "id": "P2",
+      "file": "dailymed-apixaban.md",
+      "ranks": {
+        "ours": {
+          "question": 2,
+          "question+drug": 2
+        },
+        "baseline": {
+          "question": null,
+          "question+drug": null
+        }
+      }
+    },
+    {
+      "id": "P3",
+      "file": "dailymed-warfarin.md",
+      "ranks": {
+        "ours": {
+          "question": 6,
+          "question+drug": 5
+        },
+        "baseline": {
+          "question": null,
+          "question+drug": null
+        }
+      }
+    },
+    {
+      "id": "P3",
+      "file": "dailymed-sertraline.md",
+      "ranks": {
+        "ours": {
+          "question": 4,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 1,
+          "question+drug": 1
+        }
+      }
+    },
+    {
+      "id": "P4",
+      "file": "dailymed-metformin.md",
+      "ranks": {
+        "ours": {
+          "question": 1,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 2,
+          "question+drug": 2
+        }
+      }
+    },
+    {
+      "id": "C2",
+      "file": "dailymed-acetaminophen.md",
+      "ranks": {
+        "ours": {
+          "question": 4,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": null,
+          "question+drug": null
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "file": "dailymed-warfarin.md",
+      "ranks": {
+        "ours": {
+          "question": null,
+          "question+drug": null
+        },
+        "baseline": {
+          "question": null,
+          "question+drug": null
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "file": "dailymed-ibuprofen.md",
+      "ranks": {
+        "ours": {
+          "question": 5,
+          "question+drug": 2
+        },
+        "baseline": {
+          "question": 1,
+          "question+drug": 1
+        }
+      }
+    },
+    {
+      "id": "C4",
+      "file": "dailymed-sertraline.md",
+      "ranks": {
+        "ours": {
+          "question": 1,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 1,
+          "question+drug": 1
+        }
+      }
+    },
+    {
+      "id": "C5",
+      "file": "dailymed-aspirin.md",
+      "ranks": {
+        "ours": {
+          "question": 2,
+          "question+drug": 1
+        },
+        "baseline": {
+          "question": 3,
+          "question+drug": 3
+        }
+      }
+    },
+    {
+      "id": "C5",
+      "file": "medlineplus-aspirin.md",
+      "ranks": {
+        "ours": {
+          "question": 1,
+          "question+drug": 2
+        },
+        "baseline": {
+          "question": 1,
+          "question+drug": 1
+        }
+      }
+    },
+    {
+      "id": "C6",
+      "file": "dailymed-warfarin.md",
+      "ranks": {
+        "ours": {
+          "question": 3,
+          "question+drug": 2
+        },
+        "baseline": {
+          "question": 3,
+          "question+drug": 3
+        }
+      }
+    }
+  ],
+  "metrics": {
+    "ours": {
+      "question": {
+        "recall@3": 0.6153846153846154,
+        "recall@6": 0.9230769230769231,
+        "mrr": 0.5025641025641026
+      },
+      "question+drug": {
+        "recall@3": 0.8461538461538461,
+        "recall@6": 0.9230769230769231,
+        "mrr": 0.7076923076923076
+      }
+    },
+    "baseline": {
+      "question": {
+        "recall@3": 0.6153846153846154,
+        "recall@6": 0.6923076923076923,
+        "mrr": 0.48717948717948717
+      },
+      "question+drug": {
+        "recall@3": 0.6923076923076923,
+        "recall@6": 0.6923076923076923,
+        "mrr": 0.5128205128205129
+      }
+    }
+  },
+  "caveats": [
+    "The sample is 13 gold files from 9 questions, so one file is 7.7 points of recall.",
+    "The query is the raw question, not an agent's sub-question.",
+    "Our chunks reach 5,000 characters and the windows 1,000, and a hit needs only one line of overlap with the gold range, so a larger chunk is easier to hit."
+  ]
+}

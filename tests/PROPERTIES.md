@@ -19,7 +19,7 @@ The index tests use a fake embedder that hashes words into 32 numbers, so they n
 I1. Every returned chunk matches every filter given (`drug`, `source`, `section`). `test_every_hit_satisfies_every_filter` (`tests/test_index.py`)
 I2. A search returns at most `k` hits, never the same chunk twice, and the scores never go up from one hit to the next. `test_at_most_k_distinct_hits_in_non_increasing_score_order` (`tests/test_index.py`)
 I3. A chunk ranked first by the vector comparison and first by the keyword (BM25) ranking is the first result. `test_first_in_both_rankings_is_first_overall` (`tests/test_index.py`)
-I4. Searching with a chunk's own embedding text returns that chunk first, when no other chunk has the same vector. `test_searching_a_chunks_own_text_returns_it_first` (`tests/test_index.py`)
+I4. Searching with a chunk's own embedding text ranks that chunk first by vector similarity, when no other chunk's vector points the same way. The fused result can still put another chunk first, because BM25 rewards a chunk that repeats the query's words. `test_a_chunks_own_text_ranks_it_first_by_similarity` (`tests/test_index.py`)
 I5. Every stored embedding has length 1, so a dot product equals cosine similarity. `test_stored_rows_have_unit_length` (`tests/test_index.py`)
 I6. `OpenAIEmbedder.embed` returns one row per text in input order, for any number of texts, batch size and concurrency, even when the server answers batches or rows out of order, and never sends a batch larger than the batch size. `test_openai_embedder_keeps_input_order` (`tests/test_index.py`)
 I7. Building twice from the same chunks and searching gives identical results. `test_building_twice_gives_equal_results` (`tests/test_index.py`)
@@ -61,6 +61,7 @@ Hypothesis builds small synthetic documents (a title, an optional source line, h
 21. A file name that is not `dailymed-<drug>`, `medlineplus-<drug>` or `GLOSSARY` raises an error that names the file. `test_unknown_file_name_is_rejected_by_name` (`tests/test_corpus.py`)
 22. In the real corpus, a run of consecutive lines holding a ` | ` table is never split across chunks. `test_no_table_block_is_split` (`tests/test_corpus.py`)
 23. In the real corpus, every top-level heading maps to a section key, or is on a short list in the test of headings left unmapped on purpose. `test_every_top_level_heading_is_mapped_or_listed` (`tests/test_corpus.py`)
+24. No chunk text carries a carriage return, although `GLOSSARY.md` uses Windows line ends. `test_no_chunk_text_carries_a_carriage_return` (`tests/test_corpus.py`)
 
 ## Tools (`tools.py`)
 

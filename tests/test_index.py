@@ -94,15 +94,18 @@ def test_first_in_both_rankings_is_first_overall(chunks, query):
 
 
 @given(chunks_st())
-def test_searching_a_chunks_own_text_returns_it_first(chunks):
+def test_a_chunks_own_text_ranks_it_first_by_similarity(chunks):
     texts = [embedding_text(c) for c in chunks]
     vectors = run(FakeEmbedder().embed(texts))
-    # hashed bags of tokens collide for texts that are permutations of each other
-    if len({v.tobytes() for v in vectors}) < len(chunks):
+    directions = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    # texts with the same word proportions point the same way, so neither can rank above the other
+    if len({d.round(5).tobytes() for d in directions}) < len(chunks):
         return
     index = build(chunks)
     for chunk, text in zip(chunks, texts):
-        assert search(index, text, k=1)[0].chunk is chunk
+        hit = next(h for h in search(index, text, k=len(chunks)) if h.chunk is chunk)
+        # only the dense rank: BM25 can prefer a chunk that repeats the query words, so fusion may not
+        assert hit.dense_rank == 1
 
 
 @given(chunks_st())

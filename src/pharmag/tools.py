@@ -177,13 +177,12 @@ class Tools:
         for chunk in self._chunks:
             if chunk.source != "glossary":
                 continue
-            lines = [line.rstrip() for line in chunk.text.split("\n")]  # the file has CRLF line ends
-            starts = [i for i, line in enumerate(lines) if _GLOSSARY_ENTRY.match(line)]
-            for n, start in enumerate(starts):
-                body = lines[start : starts[n + 1] if n + 1 < len(starts) else len(lines)]
-                while not body[-1]:
+            lines = chunk.text.split("\n")
+            starts = [(i, m[1]) for i, line in enumerate(lines) if (m := _GLOSSARY_ENTRY.match(line))]
+            for n, (start, term) in enumerate(starts):
+                body = lines[start : starts[n + 1][0] if n + 1 < len(starts) else len(lines)]
+                while not body[-1].strip():
                     body.pop()
-                term = _GLOSSARY_ENTRY.match(lines[start])[1]
                 first = chunk.line_start + start
                 entries.append(
                     (

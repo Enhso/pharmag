@@ -62,7 +62,9 @@ def load_corpus(directory: Path) -> list[Chunk]:
     for path in sorted(directory.iterdir()):
         if path.suffix in (".md", ".txt"):
             source, drug = _file_identity(path)
-            lines = path.read_bytes().decode("utf-8").split("\n")
+            # GLOSSARY.md has Windows line ends, and a quote check needs text without them
+            text = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
+            lines = text.split("\n")
             chunks += _file_chunks(path.name, source, drug, lines)
     return chunks
 

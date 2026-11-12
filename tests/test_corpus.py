@@ -180,3 +180,7 @@ def test_section_presence(chunks):
 def test_every_top_level_heading_is_mapped_or_listed(chunks):
     unmapped = {c.heading_path[0] for c in chunks if c.heading_path and c.section is None}
     assert unmapped <= UNMAPPED_ON_PURPOSE
+
+
+def test_no_chunk_text_carries_a_carriage_return(chunks):
+    assert not any("\r" in c.text for c in chunks)
