@@ -8,6 +8,12 @@ MODEL = "OPENAI_MODEL"
 EMBEDDING_MODEL = "OPENAI_EMBEDDING_MODEL"
 REQUIRED = (API_KEY, BASE_URL, MODEL, EMBEDDING_MODEL)
 QUOTES = "'\""
+# Optional per-role model names (DEC-025). Unset means OPENAI_MODEL.
+PLANNER_MODEL = "PHARMAG_PLANNER_MODEL"
+WORKER_MODEL = "PHARMAG_WORKER_MODEL"
+WRITER_MODEL = "PHARMAG_WRITER_MODEL"
+CRITIC_MODEL = "PHARMAG_CRITIC_MODEL"
+OVERRIDES = (PLANNER_MODEL, WORKER_MODEL, WRITER_MODEL, CRITIC_MODEL)
 
 
 @dataclass(frozen=True)
@@ -16,6 +22,10 @@ class Settings:
     base_url: str
     model: str
     embedding_model: str
+    planner_model: str
+    worker_model: str
+    writer_model: str
+    critic_model: str
 
 
 @dataclass(frozen=True)
@@ -47,7 +57,7 @@ def _problem_with(name: str, environ: Mapping[str, str]) -> str | None:
 
 def load_settings(environ: Mapping[str, str]) -> Settings | list[ConfigProblem]:
     problems = []
-    for name in REQUIRED:
+    for name in REQUIRED + tuple(n for n in OVERRIDES if n in environ):
         text = _problem_with(name, environ)
         if text:
             problems.append(ConfigProblem(name, text))
@@ -58,4 +68,8 @@ def load_settings(environ: Mapping[str, str]) -> Settings | list[ConfigProblem]:
         base_url=environ[BASE_URL],
         model=environ[MODEL],
         embedding_model=environ[EMBEDDING_MODEL],
+        planner_model=environ.get(PLANNER_MODEL, environ[MODEL]),
+        worker_model=environ.get(WORKER_MODEL, environ[MODEL]),
+        writer_model=environ.get(WRITER_MODEL, environ[MODEL]),
+        critic_model=environ.get(CRITIC_MODEL, environ[MODEL]),
     )
