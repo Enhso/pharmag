@@ -1,6 +1,6 @@
 # Architecture of the core
 
-Status: approved by the owner on 2026-11-11 with the rulings DEC-021 to DEC-026 in the [decision log](decisions.md). The design applies the earlier rulings DEC-005 to DEC-015. The corpus parser, the index, and the tools come first. The agents follow after a check-in with the owner (DEC-028).
+Status: approved by the owner on 2026-11-11 with the rulings DEC-021 to DEC-026 in the [decision log](decisions.md). The design applies the earlier rulings DEC-005 to DEC-015. The corpus parser, the index, and the tools came first. The agents, the grounding checks, and the pipeline were built on 2026-11-12, after the owner's go-ahead (DEC-031). The streaming endpoint is not built yet.
 
 ## Request flow
 
@@ -8,12 +8,12 @@ One question passes through these stages. Stages 1, 2, 3, 5, and 7 are LLM calls
 
 1. **Plan.** The planner returns a typed `Plan`: whether the question is in scope, and a list of sub-questions, each with the drugs it concerns.
 2. **Research.** One worker per sub-question, up to six at the same time. Each worker runs its own tool-calling loop over the four tools, with at most ten tool calls, and returns typed `Findings`: statements, each with a verbatim quote and the ID of the chunk the quote comes from.
-3. **Write.** The writer returns a typed `Draft`: the answer as prose, and a numbered list of claims. The prose cites each claim with its marker, such as `[3]`. Each claim carries its citations (chunk ID and quote) and a kind: a fact from one passage, or a synthesis across passages.
-4. **Quote check.** Code confirms that each quote occurs in the chunk it cites. A claim with a failed quote is marked unsupported with no LLM involved.
+3. **Write.** The writer returns a typed `Draft`: the answer as prose, and a numbered list of claims. The prose cites each claim with its marker, such as `[3]`. Each claim carries its citations (chunk ID and quote) and a kind: a fact from one passage, or a synthesis across passages. A draft whose prose uses a marker with no claim goes back to the writer inside the same call.
+4. **Quote check.** Code confirms that each quote occurs in the chunk it cites, and that a tool returned that chunk during this request. The comparison ignores case, spacing, and Markdown emphasis. A claim with a failed quote is marked unsupported with no LLM involved.
 5. **Review.** The critic sees the prose, the claims, and the cited chunks. It returns a verdict per claim: supported, unsupported, or ambiguous, with a reason, and a follow-up query for each unsupported claim. It also reports any statement in the prose that carries no marker, and such a statement counts as an unsupported claim.
 6. **Retry, at most once.** New workers research the follow-up queries. The writer revises the draft. Stages 4 and 5 run again, and their verdicts are final.
 7. **Redact, only if needed.** If a claim is still unsupported, the writer rewrites the prose without it. This is the last LLM call.
-8. **Respond.** Code confirms that every marker in the prose points to a surviving claim. It lists the source files, reports the removed claims and the cautions under `critic`, attaches the trace, and appends the disclaimer.
+8. **Respond.** Code confirms that every marker in the prose points to a surviving claim. As a last resort it drops a sentence that still carries a marker of a removed claim, and reports `marker_check: repaired`. It lists the source files, which are the files cited by the claims left in the prose. It reports the removed claims and the cautions under `critic`, and attaches the trace. To the prose it appends the cautions, a numbered source list (marker, file, section, lines), and the disclaimer, so a reader of `answer` alone sees the exact file names.
 
 An out-of-scope question skips stages 2 to 7 and gets a short refusal with the disclaimer, as a 200 (DEC-012).
 
@@ -23,7 +23,7 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 |---|---|---|
 | `Chunk` | `id` (file name plus line range), `file`, `drug`, `source`, `section` (canonical key), `heading_path`, `line_start`, `line_end`, `text` | Corpus parser, at startup |
 | `Plan` | `in_scope`, `reason`, `sub_questions` (each with `text` and `drugs`) | Planner |
-| `Findings` | `sub_question`, `findings` (each with `statement`, `chunk_id`, `quote`), `not_found` | Worker |
+| `Findings` | `findings` (each with `statement`, `chunk_id`, `quote`), `not_found`. Code pairs each result with its sub-question | Worker |
 | `Draft` | `answer` (prose with markers), `claims` (each with `text`, `kind`, `citations`) | Writer |
 | `Verdict` | per claim: `status`, `reason`, `follow_up`. Plus the unmarked statements found in the prose | Quote check, then critic |
 | `TraceEvent` | `stage`, `kind`, `data`, elapsed time | Every stage |
@@ -33,9 +33,9 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 
 | File | Owns |
 |---|---|
-| `config.py` (exists) | Settings and the strict config check |
-| `api.py` (exists) | Routes: `/health`, `/ask`, `/ask/stream`, and the static page |
-| `models.py` (started) | The types above |
+| `config.py` | Settings, the strict config check, and the four role overrides |
+| `api.py` | Routes: `/health`, `/ask`, and the static page. It builds the engine in the background. `/ask/stream` is not built yet |
+| `models.py` | The types above |
 | `corpus.py` | Files to chunks: heading tree, flattened tables, the three label formats, canonical section keys |
 | `index.py` | Embeddings in a NumPy array, BM25, rank fusion, metadata filters |
 | `tools.py` | `search_corpus`, `get_section`, `find_interactions`, `lookup_glossary`, as plain functions over the corpus and the index |
@@ -62,7 +62,8 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 - A live build of the index took 10.3 seconds for the 451 chunks (one run, four parallel batches of 128).
 - The first retrieval eval is in `evals/results/retrieval.json`. With the raw question as the query, 12 of 13 gold passages are in the top six for the heading-tree chunks, against 9 of 13 for 1,000-character windows. The file lists the caveats. In no mode does the search find the warfarin table row that names ibuprofen, which is the case `find_interactions` covers.
 - Each LLM call records input tokens, cached input tokens, and output tokens, and the log warns when the cache hit rate drops.
-- The streaming endpoint sends each `TraceEvent` as it happens and ends with the full `AskResponse`.
+- The streaming endpoint will send each `TraceEvent` as it happens and end with the full `AskResponse`. The pipeline already emits the events; the endpoint is not built yet.
+- A request in which every worker fails gives HTTP 502 at the research stage. A failed index build gives 503, and the next question starts the build again.
 
 ## Chunk size, from the corpus
 
