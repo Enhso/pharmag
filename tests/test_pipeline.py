@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 import pydantic_ai.models
+import pytest
 from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
 
@@ -21,7 +22,7 @@ from pharmag.models import (
     Review,
     SubQuestion,
 )
-from pharmag.pipeline import DISCLAIMER, MAX_TOOL_CALLS, Engine, answer
+from pharmag.pipeline import DISCLAIMER, MAX_TOOL_CALLS, Engine, PipelineError, answer
 from pharmag.tools import Tools
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
@@ -184,12 +185,27 @@ def test_a_dangling_marker_left_by_the_redaction_is_repaired():
     assert dangling_markers(r.answer, {1}) == [] and "Moon dust" not in r.answer
 
 
-def test_a_failed_worker_does_not_fail_the_request():
-    def broken(messages, info):
-        raise RuntimeError("model down")
+def broken(messages, info):
+    raise RuntimeError("model down")
 
-    writer, writes = scripted(Draft(answer="The documents lack this.", claims=[]))
-    critic, _ = scripted(Review(verdicts=[], unmarked=[]))
-    r = run(scripted(PLAN)[0], FunctionModel(broken), writer, critic)
+
+def test_one_failed_worker_does_not_fail_the_request():
+    two = PLAN.model_copy(update={"sub_questions": [*PLAN.sub_questions, SubQuestion(text="BROKEN", drugs=[])]})
+    healthy, _ = researcher(WARFARIN_SECTION)
+
+    def play(messages, info):
+        if "BROKEN" in str(messages[0].parts[-1].content):
+            raise RuntimeError("model down")
+        return healthy.function(messages, info)
+
+    writer, writes = scripted(ONLY_GOOD)
+    r = run(scripted(two)[0], FunctionModel(play), writer, scripted(supported(1))[0])
     assert "model down" in writes[0][0].parts[-1].content
-    assert r.sources == [] and r.answer.endswith(DISCLAIMER)
+    assert r.sources == [WARFARIN.file]
+
+
+def test_the_request_fails_when_every_worker_fails():
+    writer, writes = scripted(ONLY_GOOD)
+    with pytest.raises(PipelineError) as failure:
+        run(scripted(PLAN)[0], FunctionModel(broken), writer, scripted(supported(1))[0])
+    assert failure.value.stage == "research" and not writes

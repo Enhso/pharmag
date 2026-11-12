@@ -98,4 +98,5 @@ The grounding tests draw spans from the real corpus passages. The pipeline tests
 33. An out-of-scope question calls no worker, writer, or critic and gets a refusal that ends with the disclaimer. `test_an_out_of_scope_question_gets_a_refusal_and_calls_nobody_else` (`tests/test_pipeline.py`)
 34. A worker that asks for more than `MAX_TOOL_CALLS` tool calls gets the budget message, runs no more than `MAX_TOOL_CALLS`, and still returns findings. `test_a_worker_over_its_tool_budget_gets_the_budget_message_and_still_returns_findings` (`tests/test_pipeline.py`)
 35. A redaction that leaves a dangling marker ends with `marker_check` `repaired` and no dangling marker in the answer. `test_a_dangling_marker_left_by_the_redaction_is_repaired` (`tests/test_pipeline.py`)
-36. A worker that raises does not fail the request; its error reaches the writer as `not_found`. `test_a_failed_worker_does_not_fail_the_request` (`tests/test_pipeline.py`)
+36. One worker that raises does not fail the request; its error reaches the writer as `not_found`. `test_one_failed_worker_does_not_fail_the_request` (`tests/test_pipeline.py`)
+37. When every worker raises, the request fails at the research stage and the writer is never called, so an outage is not reported as a gap in the documents. `test_the_request_fails_when_every_worker_fails` (`tests/test_pipeline.py`)

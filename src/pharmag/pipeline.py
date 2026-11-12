@@ -148,7 +148,7 @@ async def _research(req: _Request, stage: Stage, tasks: list[tuple[str, str]]) -
     """One worker per (label, prompt), at most MAX_WORKERS at once. A failed worker reports itself in not_found."""
     gate = asyncio.Semaphore(MAX_WORKERS)
 
-    async def one(label: str, prompt: str) -> Findings:
+    async def one(label: str, prompt: str) -> Findings | Exception:
         async with gate:
             deps = WorkerDeps(
                 tools=req.engine.tools,
@@ -163,10 +163,21 @@ async def _research(req: _Request, stage: Stage, tasks: list[tuple[str, str]]) -
                 limits = UsageLimits(request_limit=WORKER_REQUEST_LIMIT)
                 return await req.run("worker", worker, prompt, deps=deps, usage_limits=limits)
             except Exception as e:  # one failed worker must not fail the request
-                return Findings(findings=[], not_found=f"The research failed: {type(e).__name__}: {e}")
+                return e
 
     results = await asyncio.gather(*(one(label, prompt) for label, prompt in tasks))
-    return [(label, r) for (label, _), r in zip(tasks, results)]
+    failures = [r for r in results if isinstance(r, Exception)]
+    if tasks and len(failures) == len(tasks):
+        raise failures[0]  # an outage must not read as "the documents lack it"
+    return [
+        (
+            label,
+            Findings(findings=[], not_found=f"The research failed: {type(r).__name__}: {r}")
+            if isinstance(r, Exception)
+            else r,
+        )
+        for (label, _), r in zip(tasks, results)
+    ]
 
 
 def _findings_text(pairs: list[tuple[str, Findings]]) -> str:
@@ -210,7 +221,9 @@ async def _check(req: _Request, draft: Draft) -> tuple[list[ClaimVerdict], list[
         if n in failed:
             verdicts.append(ClaimVerdict(claim=n, status="unsupported", reason=failed[n], follow_up=claim.text))
         elif n in given:
-            verdicts.append(given[n].model_copy(update={"follow_up": given[n].follow_up or claim.text}))
+            v = given[n]
+            follow_up = (v.follow_up or claim.text) if v.status == "unsupported" else None
+            verdicts.append(v.model_copy(update={"follow_up": follow_up}))
         else:
             verdicts.append(
                 ClaimVerdict(claim=n, status="unsupported", reason="The critic gave no verdict.", follow_up=claim.text)
@@ -325,7 +338,12 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
             unmarked=unmarked,
             marker_check=marker_check,
         )
-        source_lines = [f"[{c.marker}] {c.file}, {c.section}, lines {c.line_start}-{c.line_end}" for c in citations]
+        by_passage: dict[str, list[int]] = {}  # one source line per passage, with every marker that cites it
+        for c in citations:
+            markers_here = by_passage.setdefault(f"{c.file}, {c.section}, lines {c.line_start}-{c.line_end}", [])
+            if c.marker not in markers_here:
+                markers_here.append(c.marker)
+        source_lines = ["".join(f"[{n}]" for n in ns) + f" {where}" for where, ns in by_passage.items()]
     timings, usage = req.totals()
     return AskResponse(
         answer=_answer_text(prose, cautions, source_lines),
