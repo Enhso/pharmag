@@ -185,6 +185,30 @@ def test_a_dangling_marker_left_by_the_redaction_is_repaired():
     assert dangling_markers(r.answer, {1}) == [] and "Moon dust" not in r.answer
 
 
+TWO_SENTENCES = "Warfarin has contraindications [1]. It also has others [1]."
+MISMATCHED = Draft(answer=TWO_SENTENCES + " Extra [2][3].", claims=[GOOD])
+CONSISTENT = Draft(answer=TWO_SENTENCES, claims=[GOOD])
+
+
+def test_the_writer_repairs_markers_without_claims_inside_one_run():
+    worker, _ = researcher(WARFARIN_SECTION)
+    writer, writes = scripted(MISMATCHED, CONSISTENT)
+    r = run(scripted(PLAN)[0], worker, writer, scripted(supported(1))[0])
+    assert len(writes) == 2 and r.critic.review_rounds == 1
+    assert r.critic.marker_check == "passed"
+    assert "It also has others" in r.answer
+    assert "markers [2, 3]" in str(writes[1][-1].parts[0].content) and "1 claims" in str(writes[1][-1].parts[0].content)
+
+
+def test_a_stubborn_marker_mismatch_still_answers_and_is_repaired():
+    worker, _ = researcher(WARFARIN_SECTION)
+    writer, writes = scripted(MISMATCHED)
+    r = run(scripted(PLAN)[0], worker, writer, scripted(supported(1))[0])
+    assert len(writes) == 3  # first try and two output retries, then it goes through
+    assert r.critic.marker_check == "repaired" and dangling_markers(r.answer, {1}) == []
+    assert "It also has others" in r.answer and "Extra" not in r.answer
+
+
 def broken(messages, info):
     raise RuntimeError("model down")
 

@@ -80,6 +80,12 @@ def test_drop_dangling_leaves_no_dangling_marker_and_keeps_every_clean_sentence(
             assert text in result
 
 
+def test_markers_after_the_final_punctuation_go_with_their_sentence():
+    prose = "A is true [1]. B is a rare but serious illness. [1][2] C is fine [1]."
+    assert drop_dangling(prose, {1}) == "A is true [1]. C is fine [1]."
+    assert drop_dangling("A [1]. B. [1] [3] C [1].", {1}) == "A [1]. C [1]."
+
+
 def test_failed_claims_names_each_kind_of_failure():
     chunk = CHUNKS[0]
     evidence = {chunk.id: chunk}
