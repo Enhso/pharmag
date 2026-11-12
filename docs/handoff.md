@@ -1,108 +1,116 @@
 # Handoff
 
-Originally written on 2026-11-12 at the end of the first working session. Updated on 2026-11-12 with the property-review results and their preservation for follow-up (DEC-030). The review and its preservation are not owner approval of the property contracts or fixes, or a new architecture decision. Rewrite this file before the next session stops.
+Rewritten on 2026-11-12 at the end of the second working session. Rewrite this file before the next session stops.
 
 The deadline is 2026-11-13 at 23:59 Casablanca time, which is 22:59 UTC if Morocco is on UTC+1 that day. The graders assess the last commit pushed before it.
+
+## Where things stand
+
+A working proof of concept is on `main` and pushed (DEC-031). It is the fallback submission. If nothing else lands, this state already meets the brief's hard constraints H1 to H12.
 
 ## Read these first
 
 | File | Why |
 |---|---|
 | `CLAUDE.md` | The working agreement. The owner decides, and every ruling is logged |
-| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-030. Do not reopen a ruling |
-| `docs/architecture.md` | The approved design of the core: request flow, data shapes, modules, limits |
-| `docs/scoping.md` | The brief's constraints H1 to H18, their consequences I1 to I6, and the risks |
-| [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.md) | Authoritative detailed property review: F01–F16, with 7 HIGH and 9 MEDIUM finding groups. Read before proposing property changes |
-| `defense-brief.md` | Private and gitignored. Evidence E1 to E13, proxy details, and the defense of each ruling. Add to it with every decision and measurement |
-| `ai-config/README.md` | Manifest of skills, MCP servers, agents, and plugins. Add a row when a session first uses a skill or an MCP server, and copy the skill into `ai-config/skills/` |
+| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-031. Do not reopen a ruling. DEC-031 lists six choices the assistant made that the owner can still veto |
+| `docs/architecture.md` | The design of the core, updated to match what was built |
+| `docs/scoping.md` | The brief's constraints H1 to H18, their consequences, and the risks |
+| [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.md) | The review of the first 47 properties, F01 to F16. Read before proposing property changes |
+| `defense-brief.md` | Private and gitignored. Evidence E1 to E14, proxy details, and the defense of each ruling. Add to it with every decision and measurement |
+| `ai-config/README.md` | Manifest of skills, MCP servers, agents, and plugins. Add a row when a session first uses a skill or an MCP server |
 
 ## What exists on main
 
-Everything below is merged, pushed, and covered by 67 passing tests (`uv run --locked pytest -q`).
+Everything below is merged and pushed. 93 tests pass with no network (`uv run --locked pytest -q`).
 
-- **Skeleton.** `config.py` (strict config check), `api.py` (`/health`, a placeholder `/ask`, the static page), `Dockerfile`, `.dockerignore`. Verified with the graders' exact commands on 2026-11-11.
-- **Corpus parser.** `corpus.py` cuts the 21 files into 451 chunks on the heading tree, with a cap of 5,000 characters.
-- **Search index.** `index.py` holds embeddings in a NumPy array and BM25 through `bm25s`, and fuses the two rankings.
-- **Tools.** `tools.py` has `search_corpus`, `get_section`, `find_interactions`, and `lookup_glossary` as plain functions. Brand names and class terms come from the corpus.
-- **Retrieval eval.** `evals/retrieval_eval.py` and its result in `evals/results/retrieval.json`.
-- **Eval questions.** `evals/questions.json`, 11 questions with expected sources, gold line ranges, and key facts.
+- **Corpus, index, tools.** Unchanged since the first session: 451 heading-tree chunks, hybrid exact search, four tools.
+- **Type contract.** `models.py` holds what each LLM role returns and what `/ask` returns.
+- **Agents.** `agents.py` has the planner, the worker with its four tool wrappers, the writer, the critic, and a redactor that shares the writer's prompt and model. The writer has an output validator: a draft whose prose uses a marker with no claim goes back to the writer inside the same call.
+- **Grounding.** `grounding.py` has the quote check and the marker checks as pure functions.
+- **Pipeline.** `pipeline.py` runs stages 1 to 8 with the limits of DEC-026, records tokens per role, and emits trace events.
+- **API.** `api.py` builds the engine in the background, reports `building`, `ready`, or `failed` in `/health`, and routes `/ask` through the pipeline. A failed stage gives 502. A failed index build gives 503, and the next question starts the build again.
+- **Config.** The four `PHARMAG_*_MODEL` overrides, checked as strictly as the required variables.
+- **Page.** Plain. It shows the answer, the sources, and four collapsed blocks: evidence, plan, tool calls, critic.
+- **README and `.env.example`.** Run commands, endpoints, variables. No eval numbers yet.
 
-Not built yet: `agents.py`, `grounding.py`, `pipeline.py`, the real `/ask`, `/ask/stream`, the index build at startup, the UI beyond a question box, the answer eval with DeepEval, the README, and an `.env.example`.
+Not built yet: `/ask/stream` and a page that uses it, the design pass, the answer eval with DeepEval, a time cap per request, and the presentation outline.
+
+## How the proof of concept was checked
+
+- **Container.** `docker build -t agent .` gives a 395 MB image. With `docker run -p 8000:8000 --env-file .env agent`, `/health` reports `ready` 5 to 7 seconds after start, the page and its two assets return 200, and a body with no `question` returns 422.
+- **Eleven eval questions against the container**, one run each. All eleven returned 200 with every expected source file. P2 also cited one file outside its expected and allowed lists (`medlineplus-apixaban.md`). The median time was 26 seconds, from 2 to 72. Four questions took the retry round, two had a claim removed, and P2 carries three cautions.
+- **The page in a real browser.** Headless Chrome asked a question through the page. The answer, the sources, and the four blocks rendered, and no request went to another host. `/favicon.ico` returns 404.
+- **What limits those numbers.** One run per question. The expected sources of C1 to C7 are our own. The expected answers are still drafts. Times depend on the proxy and on the model the graders configure.
+
+## Independent review of the pipeline
+
+A verifier agent compared the build with `docs/architecture.md` and the rulings, and proved each finding with scripted models and no network. It shows what the code does when a model misbehaves, not how often a real model does. The status column says what this session did about each finding.
+
+| ID | Severity | Finding | Status |
+|---|---|---|---|
+| V1 | High | After the redaction, code checks only the markers. A redactor that drops a marker and keeps its sentence, or ignores an unmarked statement, lets a known-unsupported claim reach the user (against DEC-022) | Open |
+| V2 | Medium | When every worker of the retry round fails, the request returns 502 and the complete first draft is lost (against DEC-007) | Open |
+| V3 | Medium | An in-scope plan with no sub-questions runs no worker, and the writer answers from nothing | Open |
+| V4 | Medium | Two verdicts for one claim: the first wins, so `supported` can hide `unsupported` | Open |
+| V5 | Medium | A failed worker's exception text goes into the writer's prompt. A provider that echoes the key could put it in an answer | Open |
+| V6 | Medium | `drop_dangling` ends a sentence at "e.g." or "St.", so the front of a removed sentence can stay | Open |
+| V7 | Medium | When every claim is removed, the answer is the disclaimer alone, with no explanation | Open |
+| V8 | Low | The quote check accepts a trivial quote such as "the" or a partial word. How strict it should be is the owner's call | Open, owner |
+| V9 | Low | A blank follow-up or unmarked string starts a retry round | Open |
+| V10 | Low | `docs/architecture.md` said stage 8 "attaches the trace", and no trace list is returned | Open |
+| V11 | Low | The per-call usage line is logged at INFO, which uvicorn's logging hides. The cache warning does appear | Open |
+| V12 | Low | The three synchronous tools run in worker threads, so `emit` is called off the event loop. `/ask/stream` must hand events over with a thread-safe call | Open, matters for step 3 |
+| V13 | Low, unproven | A marker written as `[1-3]` passes every marker check | Open |
+| V14 | Low, unproven | A redactor that renumbers markers would attach a sentence to the wrong source | Open |
+
+The verifier also ran 21 mutations of the code. These survived, so no test guards the behaviour yet: the quote check reading only the first citation of a claim; any corpus chunk counting as "returned by a tool"; the ambiguous path and its cautions; the critic's unmarked list; a missing verdict treated as supported; `sources` including uncited claims; the cache-drop warning; the Markdown-emphasis and Unicode folding in the quote check; the `asyncio.shield` around the engine build. The property test for `drop_dangling` passes a version that only strips marker tokens; the example tests catch that one.
 
 ## What waits on the owner
 
-Raise these at the start of the next session. The first three block work.
+Each item has a date the owner is as likely to miss as to meet.
 
-1. **Check-in before the agents (DEC-028).** Show the retrieval numbers below and get the go-ahead for the agents step.
-2. **Expected answers.** `evals/questions.json` still says "Draft". The owner confirms each expected answer, or corrects it.
-3. **Properties.** `tests/PROPERTIES.md` lists 47 properties in six sections. The owner's rule is to confirm each one. On 2026-11-12 the owner requested evaluation of all 47 entries, not approval. [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.md) is the authoritative detailed review. DEC-030 approves preserving it and this handoff pointer only. Its proposed improvements and unresolved contract choices await owner confirmation; the catalogue, tests, and production code are unchanged.
-4. **Choices the assistant made that the owner can veto.** Python 3.15. `bm25s` for BM25. `httpx2` as the test client dependency. A 503 from `/ask` on a config error. The four `OPENAI_*` variables as the required fields. This handoff file being tracked and public.
+1. **The six choices in DEC-031.** Veto or accept each. The first one matters most: code appends the cautions, a numbered source list, and the disclaimer to the `answer` text. By 2026-11-13, 10:00.
+2. **Expected answers.** `evals/questions.json` still says "Draft". Confirm or correct each. This blocks the answer eval. By 2026-11-13, 11:00.
+3. **Properties.** `tests/PROPERTIES.md` now lists the first 47 entries plus C7, C8, S14 to S18, and 25 to 40. The owner's rule is to confirm each one. The proposals of F01 to F16 also wait. By 2026-11-13, 13:00.
+4. **`ai-config/transcripts/2026-11-11a.txt`.** It is untracked. It contains the proxy hostname three times, so this session did not commit it. The owner either redacts it and has it committed, or keeps it out of the repo. By 2026-11-13, 12:00.
+5. **The built-in `artifact-diagramming` skill** is listed in the manifest without a copy, because it ships inside Claude Code with no license that permits one. The working agreement says to copy each used skill. Accept or overrule. By 2026-11-13, 12:00.
+6. **Earlier choices the owner can veto.** Python 3.15. `bm25s`. `httpx2` as the test client dependency. A 503 from `/ask` on a config error. This handoff file being tracked and public.
+7. **The presentation overview.** A private page at <https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den>. Say whether a copy belongs in the repo.
+8. **The rehearsal and the summary email** are the owner's own tasks. Rehearse against a timer by 2026-11-13, 19:00. Send the email with the repo link by 2026-11-13, 21:30.
 
 ## Next steps, in order
 
-Each step names the check that proves it.
+Each step names the check that proves it. Steps 1 and 2 raise the grade most. Step 4 is required by the brief.
 
-1. **Rebuild the container on the merged tree.** Docker Desktop was not running when the session ended, so the image has not been rebuilt since the parser, index, and tools landed. Check: `docker build -t agent .`, then the run command with `.env`, then 200 from `/health` and `/ask` and the page at `/`.
-2. **Agents and pipeline (DEC-005, DEC-006, DEC-007, DEC-021 to DEC-026).** Add `pydantic-ai-slim[openai]` with an exact pin. Version 2.67.0 resolved together with the current pins on 2026-11-11. Add the types in `models.py`, the four agents with the `PHARMAG_*_MODEL` overrides, `grounding.py`, and `pipeline.py`. Wire `api.py`: build the index in the background at startup, report its state in `/health`, make `/ask` wait for it, and add `/ask/stream`. Checks:
-   - Property tests for the quote check and the marker check.
-   - A test that plants an unsupported claim and sees the critic path remove it, with a fake model and no network.
-   - The four public questions answered end to end in the container, with every expected source file in `sources`.
-3. **Answer eval with DeepEval (DEC-015).** A script that calls the live API for the 11 questions and reports source recall and precision, key-fact coverage, the DeepEval metrics, latency, and tokens per question. DeepEval is a development-only dependency. If it has no Python 3.15 wheels, run it from its own environment, since it only calls the API over HTTP. Check: a results file, and the limits of each number stated beside it.
-4. **Interface (DEC-013).** Show the answer with its markers, the sources with the cited passage, the plan, the tool calls, and the critic's flags, fed by the streaming endpoint. Then the design pass with the `impeccable` skill. Check: the page works in the container with no request to another host.
-5. **Submission polish.** README with the run commands and the eval numbers, `.env.example` with unquoted values, a secret scan of the whole tree, the presentation outline from section 1 of the private brief, and a draft of the summary email for the owner. Check: a clean clone builds and answers.
-
-## 2026-11-12 property-review results
-
-The owner asked for all 47 catalogue entries to be evaluated for tautology, discrimination, orthogonality, generator relevance, and shrinking. This was a review request, not approval of the properties or a new architecture decision. The catalogue, tests, and production code were not changed.
-
-The authoritative detailed review is [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.md): **F01–F16, 7 HIGH and 9 MEDIUM finding groups**. It distinguishes executed targeted mutation probes from inspection-based findings. The summary below does not replace it.
-
-During the initial review, main verified the baseline with `UV_CACHE_DIR=/tmp/pharmag-review-uv-cache uv run --locked --offline pytest -q`: **67 passed**. Main also ran **five separate in-memory mutants**. Each mutant survived its corresponding suite: the tests still passed. No baseline or mutation probes were rerun during the subsequent docs-only preservation turn (DEC-030).
-
-- Successful `/ask` response includes the API key: `test_api`, **11 passed**.
-- Doubled BM25 contribution to rank fusion: `test_index`, **11 passed**.
-- Cache stores only in memory, not on disk: `test_retrieval_eval`, **7 passed**.
-- Window size reduced to `max(overlap + 1, size - 1)`: `test_retrieval_eval`, **7 passed**.
-- Parser cap raised from 5,000 to 50,000 characters: `test_corpus`, **17 passed**.
-
-These were targeted mutation probes, not a full mutation campaign or evidence of production bugs. They expose gaps in what the current suites discriminate.
-
-Existing strengths include conservation (14), fidelity (15), disjointness (16), the independent line oracle (R4), T1 selection, and T3 symmetry. The properties are generally orthogonal. Most generators shrink well, but sampling the real corpus does not make its document structure shrinkable.
-
-During the initial review, the skill copy in `ai-config/skills/property-based-testing/` and its manifest row in `ai-config/README.md` were added and remain uncommitted. That initial review made no decisions-log or defense-brief edits; subsequent preservation is recorded in DEC-030 and E13. No skill or MCP server was used during preservation. No commits or pushes were made during either turn.
-
-## Next review actions — proposals, not approved
-
-These review actions supplement, and do not replace or authorize, the implementation steps above. The agents check-in, expected-answer confirmation, and property approval blockers remain.
-
-1. **Read the findings first.** Start with [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.md), the authoritative detailed review, not just this summary.
-2. **Clarify the owner's contracts before changes.** Take the unresolved contract questions and proposed fixes to the owner. DEC-030 approves recording the review only; it settles none of those questions and authorizes no fixes.
-3. **Follow severity and stable IDs.** After owner approval, work through the 7 HIGH and then 9 MEDIUM finding groups using their stable IDs F01–F16. Update `tests/PROPERTIES.md` and the corresponding tests together for each approved change; production changes also require owner approval. Keep executed targeted probes distinct from inspection-only findings when recording follow-up checks.
-
-The existing proposal summary follows; use the detailed findings for the full scope and evidence.
-
-1. **Security wording and success-path checks.** Fix property 3: a literal prohibition on any protected value appearing as a substring is impossible for arbitrary values, including the empty string. Ask the owner to settle the protected-value non-disclosure wording; do not choose the contract here. Add a secret-absence assertion for successful `/ask` responses once that contract is agreed.
-2. **Independent tool and index witnesses.** Use independent fixture oracles for brands and glossary entries (T6/T7), rather than deriving the expected universe from the system under test. Guarantee independent positive ranking and interaction witnesses (I1–I4, T2/T3). Avoid I4 returning early on any collision and thereby skipping its ranking assertion.
-3. **Parser thresholds and structure.** Pin the expected cap independently of the production constant. Generate 4,999/5,000/5,001-character cases and oversized lines, plus heading-level-6 and multifile cases.
-4. **Retrieval geometry and cache sequences.** Strengthen exact fixed-window geometry (R1–R4) and nonempty/completeness checks (R5). Model cache sequences with mixed hits, reconstruction, and model switching; use model-tagged outputs so cross-model reuse is observable.
-5. **API and static-page coverage.** Expand the partial-configuration/invalid-body cross product. Add configuration cases for HTTP, short values, and whitespace-only values. Strengthen static locality and asset-wiring checks.
-6. **Index generators and unresolved contracts.** Add signed, zero, tied, and empty index inputs. Ask the owner to settle zero-vector behavior: I5 claims unit vectors, while the code retains zero vectors. Also ask about negative `k`, invalid batching, and invalid concurrency where their behavior is unspecified. These are contract questions, not decisions made by the review.
+1. **Answer quality on the public questions.** P3's answer is correct but thin: two or three sentences. The planner made one sub-question where the prompt allows one per drug as well. Check: P3 cites warfarin sections 7.3 and 2.4 and sertraline sections 5.3 and 7.1, three runs in a row.
+2. **Answer eval with DeepEval (DEC-015).** The session's throwaway script already posts the eleven questions and compares the sources. Its logic belongs in `evals/`: source recall and precision, key-fact coverage, the DeepEval metrics, latency, and tokens per question. DeepEval is a development-only dependency. If it has no Python 3.15 wheels, run it from its own environment, since it only calls the API over HTTP. Check: a results file, the limits of each number stated beside it, and the numbers in the README.
+3. **Interface (DEC-012, DEC-013).** Add `/ask/stream`, which sends each `TraceEvent` and ends with the full response. The pipeline already emits the events. Then the page shows progress per stage, and the `impeccable` skill handles the design pass. Add a favicon. Check: the page works in the container with no request to another host, in a real browser.
+4. **Submission polish.** A secret scan of the whole tree, the presentation outline from section 1 of the private brief, a draft of the summary email, and a clean clone that builds and answers. Check: `git clone`, the two documented commands, and one question, on a path with no `.env` history.
+5. **Latency and limits (DEC-012, DEC-026).** A retry round adds 15 to 26 seconds. The slowest question took 72 seconds. Set a time cap per request from these measurements, and decide whether six workers and ten tool calls stay. Check: the cap is a named constant with a test, and the owner has ruled on the limits.
+6. **Property-review follow-ups.** Only after the owner rules on item 3 above. Work through F01 to F16 by severity, and update `tests/PROPERTIES.md` and the tests together.
 
 ## Facts the code does not show
 
-- **The retrieval numbers.** One live run over 13 gold files, with the raw question as the query. Recall at 6 is 0.92 for the heading-tree chunks and 0.69 for 1,000-character windows. With a drug filter, recall at 3 is 0.85 against 0.69. One gold file is 7.7 points, and a larger chunk is easier to hit, so read the gap as an indication.
-- **Why `find_interactions` exists.** No search mode finds the warfarin table row that names ibuprofen (question C3). The worker's prompt has to make that tool the obvious choice for a two-drug question, without fixing the tool order in code.
-- **The config is strict (DEC-014).** A quoted, missing, or misspelled variable makes `/ask` return 503. The local `.env` is corrected. Run anything live with `uv run --locked --env-file .env ...`. The per-role override variables need the same check when they are added.
-- **The proxy, in outline.** The SDK paths work on the base URL with no `/v1` suffix. Tool calls, several tool calls in one turn, strict JSON schema output, `temperature: 0`, and `reasoning_effort` are all accepted. Small chat calls take 1 to 5 seconds. The private brief has the details.
-- **Libraries moved after the model's training data.** Starlette's test client needs `httpx2`. The `openai` SDK is on version 3. PydanticAI is on 2.67, and the docs read so far were for 2.0.0. Read current docs through context7 before coding against any of them.
-- **A flaky property test can be a false property.** The index test "a chunk's own text returns it first" failed one run in six because rank fusion does not guarantee it. The code was right. Ask whether the property is true before changing code.
-- **`GLOSSARY.md` uses Windows line ends.** The parser drops them. A quote check should still compare text with whitespace normalized.
+- **`lookup_glossary` was never called** in the eleven questions. Workers chose among the other three tools. Expect the question "is the fourth tool needed?".
+- **The critic did not use "ambiguous"** until one paragraph was added to its prompt, about claims that say two documents agree while the passages word the item differently. P2 now carries three cautions, which may be one or two too many.
+- **PydanticAI 2.67 refuses a run-level `output_type`** on an agent that has output validators. That is why the redaction has its own agent. Inside an output validator, `ctx.retry` counts the rejections so far and `ctx.max_retries` is the budget.
+- **The proxy reports cached input tokens on some calls only.** The pipeline logs a warning when a role's cache hit rate falls by more than 0.25. The INFO usage lines do not reach the container log, because nothing configures logging.
+- **The first full run hid a defect behind a green result.** All eleven questions had their expected sources, yet P2 had lost half its answer: the writer cited markers 8 to 10 with only 7 claims, and the last-resort repair dropped those sentences. Check `critic.marker_check` and read the answers, not only the sources.
+- **The config is strict (DEC-014).** A quoted, missing, or misspelled variable makes `/ask` return 503. Run anything live with `uv run --locked --env-file .env ...`.
+- **The proxy, in outline.** The SDK paths work on the base URL with no `/v1` suffix. Small chat calls take 1 to 5 seconds. The private brief has the details.
+- **`GLOSSARY.md` uses Windows line ends.** The parser drops them, and the quote check compares text with whitespace normalized.
+- **A flaky property test can be a false property.** Ask whether the property is true before changing code.
 
 ## How the work ran, for the next session's planning
 
-- The main session plans, briefs, reviews every diff, reruns every check, merges, and pushes. Builders use the `builder` agent definition at medium effort.
-- Parallel builders each get `isolation: "worktree"` and commit on their own branch. A worktree has no `.env`, so a task that needs live calls runs in the main checkout. Give each builder a different insertion point in `tests/PROPERTIES.md`, or the merge conflicts.
-- The owner's plan has a 5-hour usage limit. It ended one builder mid-task. That builder's files were complete in the working tree, so check the tree before redoing the work. Stop a running agent with the `TaskStop` tool.
+- The main session wrote the type contract first, as signatures with no body, and pushed it. Two builders then worked in parallel worktrees against it with no merge conflict. A third builder made the fixes. A verifier agent reviewed the result.
+- `isolation: "worktree"` branches from the remote default branch, so push before dispatching. A worktree has no `.env`, no brief, and no private notes, so a builder makes no live calls and the brief must carry any fact from those files.
+- Say in each brief that commit messages end with the session link line. Three builders read "no co-author lines" as "no trailers" and left it out.
+- Builders cannot run a long compound command with a heredoc inside a worktree. They write files with the Write tool and run one command per call.
+- `setsid nohup uv run uvicorn ... & echo $!` records the launcher's PID, not the server's. Find the listener with `ss -ltnp` and kill that PID.
+- A page check in a real browser needs no project dependency: `uv run --no-project --with playwright python <script>` with `channel="chrome"` drives the installed Chrome.
+- The owner's plan has a 5-hour usage limit. Check the working tree before redoing a builder's work.
 - After a merge, remove the worktree with `git worktree remove` and delete the branch.
-- Before each commit, scan the staged diff for the key and the proxy hostname. Commit messages carry no co-author lines and end with the session link line that the harness provides. Push after each verified step (DEC-020).
+- Before each commit, scan the staged diff for the key and the proxy hostname. Push after each verified step (DEC-020).
 - Tracked docs follow pstack's `technical-writing` and `unslop` skills, and stay free of the proxy hostname and of the brief's own text. The four public questions are the one exception (DEC-027).
