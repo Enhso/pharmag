@@ -22,7 +22,7 @@ A working proof of concept is on `main` and pushed (DEC-031). It is the fallback
 
 ## What exists on main
 
-Everything below is merged and pushed. 93 tests pass with no network (`uv run --locked pytest -q`).
+Everything below is merged and pushed. 112 tests pass with no network (`uv run --locked pytest -q`).
 
 - **Corpus, index, tools.** Unchanged since the first session: 451 heading-tree chunks, hybrid exact search, four tools.
 - **Type contract.** `models.py` holds what each LLM role returns and what `/ask` returns.
@@ -39,32 +39,33 @@ Not built yet: `/ask/stream` and a page that uses it, the design pass, the answe
 ## How the proof of concept was checked
 
 - **Container.** `docker build -t agent .` gives a 395 MB image. With `docker run -p 8000:8000 --env-file .env agent`, `/health` reports `ready` 5 to 7 seconds after start, the page and its two assets return 200, and a body with no `question` returns 422.
-- **Eleven eval questions against the container**, one run each. All eleven returned 200 with every expected source file. P2 also cited one file outside its expected and allowed lists (`medlineplus-apixaban.md`). The median time was 26 seconds, from 2 to 72. Four questions took the retry round, two had a claim removed, and P2 carries three cautions.
+- **Eleven eval questions against the container**, run twice: once before the review fixes and once after. Both times all eleven returned 200 with every expected source file, and no answer needed the marker repair. P2 also cited one file outside its expected and allowed lists (`medlineplus-apixaban.md`). In the second run the median time was 29 seconds, from 3 to 99. Five questions took the retry round, two had claims removed, and P2 carries two cautions.
+- **Latency varies with the retry round.** P1 took 26 seconds in two runs and 99 seconds in the third, when the critic sent it back.
 - **The page in a real browser.** Headless Chrome asked a question through the page. The answer, the sources, and the four blocks rendered, and no request went to another host. `/favicon.ico` returns 404.
 - **What limits those numbers.** One run per question. The expected sources of C1 to C7 are our own. The expected answers are still drafts. Times depend on the proxy and on the model the graders configure.
 
 ## Independent review of the pipeline
 
-A verifier agent compared the build with `docs/architecture.md` and the rulings, and proved each finding with scripted models and no network. It shows what the code does when a model misbehaves, not how often a real model does. The status column says what this session did about each finding.
+A verifier agent compared the build with `docs/architecture.md` and the rulings, and proved each finding with scripted models and no network. It shows what the code does when a model misbehaves, not how often a real model does. The status column says what this session did about each finding. A builder fixed nine of them, each with a test that fails without the fix.
 
 | ID | Severity | Finding | Status |
 |---|---|---|---|
-| V1 | High | After the redaction, code checks only the markers. A redactor that drops a marker and keeps its sentence, or ignores an unmarked statement, lets a known-unsupported claim reach the user (against DEC-022) | Open |
-| V2 | Medium | When every worker of the retry round fails, the request returns 502 and the complete first draft is lost (against DEC-007) | Open |
-| V3 | Medium | An in-scope plan with no sub-questions runs no worker, and the writer answers from nothing | Open |
-| V4 | Medium | Two verdicts for one claim: the first wins, so `supported` can hide `unsupported` | Open |
-| V5 | Medium | A failed worker's exception text goes into the writer's prompt. A provider that echoes the key could put it in an answer | Open |
-| V6 | Medium | `drop_dangling` ends a sentence at "e.g." or "St.", so the front of a removed sentence can stay | Open |
-| V7 | Medium | When every claim is removed, the answer is the disclaimer alone, with no explanation | Open |
+| V1 | High | After the redaction, code checks only the markers. A redactor that drops a marker and keeps its sentence, or ignores an unmarked statement, lets a known-unsupported claim reach the user (against DEC-022) | Fixed. After the redaction, code removes a sentence of the draft that carried an unsupported marker, or an unmarked statement, when it is still there word for word. A paraphrase is beyond what code can see |
+| V2 | Medium | When every worker of the retry round fails, the request returns 502 and the complete first draft is lost (against DEC-007) | Fixed. The first draft ships, and the redaction removes what is unsupported |
+| V3 | Medium | An in-scope plan with no sub-questions runs no worker, and the writer answers from nothing | Fixed. The question itself becomes the one sub-question |
+| V4 | Medium | Two verdicts for one claim: the first wins, so `supported` can hide `unsupported` | Fixed. The worst status wins |
+| V5 | Medium | A failed worker's exception text goes into the writer's prompt. A provider that echoes the key could put it in an answer | Fixed. Only the exception's type name goes into `not_found` |
+| V6 | Medium | `drop_dangling` ends a sentence at "e.g." or "St.", so the front of a removed sentence can stay | Fixed for `e.g.`, `i.e.`, `St.`, `vs.`, and `Dr.`. A sentence must also start with a capital, a digit, a bullet, `[`, or `(` |
+| V7 | Medium | When every claim is removed, the answer is the disclaimer alone, with no explanation | Fixed. One sentence says that no claim was supported |
 | V8 | Low | The quote check accepts a trivial quote such as "the" or a partial word. How strict it should be is the owner's call | Open, owner |
-| V9 | Low | A blank follow-up or unmarked string starts a retry round | Open |
-| V10 | Low | `docs/architecture.md` said stage 8 "attaches the trace", and no trace list is returned | Open |
+| V9 | Low | A blank follow-up or unmarked string starts a retry round | Fixed |
+| V10 | Low | `docs/architecture.md` said stage 8 "attaches the trace", and no trace list is returned | Fixed in the doc |
 | V11 | Low | The per-call usage line is logged at INFO, which uvicorn's logging hides. The cache warning does appear | Open |
 | V12 | Low | The three synchronous tools run in worker threads, so `emit` is called off the event loop. `/ask/stream` must hand events over with a thread-safe call | Open, matters for step 3 |
 | V13 | Low, unproven | A marker written as `[1-3]` passes every marker check | Open |
 | V14 | Low, unproven | A redactor that renumbers markers would attach a sentence to the wrong source | Open |
 
-The verifier also ran 21 mutations of the code. These survived, so no test guards the behaviour yet: the quote check reading only the first citation of a claim; any corpus chunk counting as "returned by a tool"; the ambiguous path and its cautions; the critic's unmarked list; a missing verdict treated as supported; `sources` including uncited claims; the cache-drop warning; the Markdown-emphasis and Unicode folding in the quote check; the `asyncio.shield` around the engine build. The property test for `drop_dangling` passes a version that only strips marker tokens; the example tests catch that one.
+The verifier also ran 21 mutations of the code, and eleven survived the tests. Tests now guard nine of those behaviours: every citation of a claim is checked, a chunk that no tool returned fails the quote check, the ambiguous path and its cautions, the critic's unmarked list, a missing verdict, a duplicate verdict, `sources` without uncited claims, the Markdown-emphasis and Unicode folding, and a stronger property for `drop_dangling`. Two are still unguarded: the cache-drop warning, and the `asyncio.shield` around the engine build.
 
 ## What waits on the owner
 
@@ -75,9 +76,10 @@ Each item has a date the owner is as likely to miss as to meet.
 3. **Properties.** `tests/PROPERTIES.md` now lists the first 47 entries plus C7, C8, S14 to S18, and 25 to 40. The owner's rule is to confirm each one. The proposals of F01 to F16 also wait. By 2026-11-13, 13:00.
 4. **`ai-config/transcripts/2026-11-11a.txt`.** It is untracked. It contains the proxy hostname three times, so this session did not commit it. The owner either redacts it and has it committed, or keeps it out of the repo. By 2026-11-13, 12:00.
 5. **The built-in `artifact-diagramming` skill** is listed in the manifest without a copy, because it ships inside Claude Code with no license that permits one. The working agreement says to copy each used skill. Accept or overrule. By 2026-11-13, 12:00.
-6. **Earlier choices the owner can veto.** Python 3.15. `bm25s`. `httpx2` as the test client dependency. A 503 from `/ask` on a config error. This handoff file being tracked and public.
-7. **The presentation overview.** A private page at <https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den>. Say whether a copy belongs in the repo.
-8. **The rehearsal and the summary email** are the owner's own tasks. Rehearse against a timer by 2026-11-13, 19:00. Send the email with the repo link by 2026-11-13, 21:30.
+6. **How strict the quote check is (V8).** Today a quote of one word, or of part of a word, passes when it occurs in the passage. A floor of a few whole words would close that. By 2026-11-13, 12:00.
+7. **Earlier choices the owner can veto.** Python 3.15. `bm25s`. `httpx2` as the test client dependency. A 503 from `/ask` on a config error. This handoff file being tracked and public.
+8. **The presentation overview.** A private page at <https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den>. Say whether a copy belongs in the repo.
+9. **The rehearsal and the summary email** are the owner's own tasks. Rehearse against a timer by 2026-11-13, 19:00. Send the email with the repo link by 2026-11-13, 21:30.
 
 ## Next steps, in order
 
