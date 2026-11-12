@@ -5,6 +5,7 @@ from collections.abc import Collection, Mapping
 from pharmag.models import Chunk, Draft
 
 _MARKER = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
+_LEADING_MARKERS = re.compile(rf"{_MARKER.pattern}(?:\s*{_MARKER.pattern})*")
 _SENTENCE_BREAK = re.compile(r"((?<=[.!?])\s+|\n+)")
 
 
@@ -50,6 +51,11 @@ def drop_dangling(prose: str, surviving: Collection[int]) -> str:
     # shortcut: a sentence ends at . ! ? plus whitespace, or at a line break, so "e.g. " ends one early;
     # upgrade to a real sentence splitter if a redaction ever cuts the wrong span
     parts = _SENTENCE_BREAK.split(prose)  # sentence, break, sentence, break, ...
+    for i in range(2, len(parts), 2):  # markers after the final punctuation belong to the sentence before
+        if m := _LEADING_MARKERS.match(parts[i]):
+            rest = parts[i][m.end() :]
+            parts[i - 2] += parts[i - 1] + m[0]
+            parts[i - 1], parts[i] = rest[: len(rest) - len(rest.lstrip())], rest.lstrip()
     kept = [
         "".join(parts[i : i + 2]) for i in range(0, len(parts), 2) if not dangling_markers(parts[i], surviving)
     ]
