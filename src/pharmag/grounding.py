@@ -6,7 +6,10 @@ from pharmag.models import Chunk, Draft
 
 _MARKER = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 _LEADING_MARKERS = re.compile(rf"{_MARKER.pattern}(?:\s*{_MARKER.pattern})*")
-_SENTENCE_BREAK = re.compile(r"((?<=[.!?])\s+|\n+)")
+# A sentence ends after . ! ? plus whitespace when a new sentence starts there, and never right after an abbreviation.
+_SENTENCE_BREAK = re.compile(
+    r"((?<=[.!?])(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bSt\.)(?<!\bvs\.)(?<!\bDr\.)\s+(?=[A-Z0-9\[(]|-\s)|\n+)"
+)
 
 
 def normalize(text: str) -> str:
@@ -46,9 +49,9 @@ def dangling_markers(prose: str, surviving: Collection[int]) -> list[int]:
     return [n for n in markers(prose) if n not in surviving]
 
 
-def drop_dangling(prose: str, surviving: Collection[int]) -> str:
-    """Remove each sentence that carries a dangling marker; every other sentence stays as it was."""
-    # shortcut: a sentence ends at . ! ? plus whitespace, or at a line break, so "e.g. " ends one early;
+def _sentences(prose: str) -> list[str]:
+    """Split prose into sentences, each with the whitespace after it; joining them gives the prose back."""
+    # shortcut: the abbreviation list is short and a sentence must start with a capital, digit, bullet, [ or (;
     # upgrade to a real sentence splitter if a redaction ever cuts the wrong span
     parts = _SENTENCE_BREAK.split(prose)  # sentence, break, sentence, break, ...
     for i in range(2, len(parts), 2):  # markers after the final punctuation belong to the sentence before
@@ -56,7 +59,25 @@ def drop_dangling(prose: str, surviving: Collection[int]) -> str:
             rest = parts[i][m.end() :]
             parts[i - 2] += parts[i - 1] + m[0]
             parts[i - 1], parts[i] = rest[: len(rest) - len(rest.lstrip())], rest.lstrip()
-    kept = [
-        "".join(parts[i : i + 2]) for i in range(0, len(parts), 2) if not dangling_markers(parts[i], surviving)
-    ]
-    return "".join(kept).strip()
+    return ["".join(parts[i : i + 2]) for i in range(0, len(parts), 2)]
+
+
+def drop_dangling(prose: str, surviving: Collection[int]) -> str:
+    """Remove each sentence that carries a dangling marker; every other sentence stays as it was."""
+    return "".join(s for s in _sentences(prose) if not dangling_markers(s, surviving)).strip()
+
+
+def sentences_with(prose: str, numbers: Collection[int]) -> list[str]:
+    """The sentences of the prose that carry one of the markers."""
+    return [s for s in _sentences(prose) if set(markers(s)) & set(numbers)]
+
+
+def _plain(text: str) -> str:
+    return normalize(re.sub(rf"\s*{_MARKER.pattern}", "", text))
+
+
+def drop_sentences(prose: str, banned: Collection[str]) -> str:
+    """Remove each sentence that contains one of the banned texts, compared without markers and through normalize."""
+    # shortcut: this sees a banned sentence kept word for word, not a paraphrase of it; only a reviewer sees that
+    wanted = [w for w in map(_plain, banned) if w]
+    return "".join(s for s in _sentences(prose) if not any(w in _plain(s) for w in wanted)).strip()
