@@ -14,6 +14,7 @@ Each skill is a verbatim copy, taken on the day of first use.
 | `pstack:unslop` | `skills/pstack/unslop/` | Same plugin | MIT | Prose rules for replies and docs | 2026-11-11 |
 | `pstack:technical-writing` | `skills/pstack/technical-writing/` | Same plugin | MIT | Style for `docs/scoping.md` and `docs/decisions.md` | 2026-11-11 |
 | `writing-for-agents` | `skills/mattpocock/writing-for-agents/` | The owner's user-level skills folder. Upstream is [mattpocock/skills](https://github.com/mattpocock/skills) | MIT, see `skills/mattpocock/LICENSE`. The upstream LICENSE file was read on 2026-11-11 | Wording of the root `CLAUDE.md` | 2026-11-11 |
+| `property-based-testing` | `skills/property-based-testing/` | The owner's installed agent skills | Not stated in installed copy | Reviewing `tests/PROPERTIES.md` | 2026-11-12 |
 
 The plugin registry lists pstack 0.9.135 as installed. The session loaded the skills from the 0.9.134 cache folder, so the copies come from that folder.
 

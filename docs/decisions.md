@@ -187,3 +187,11 @@ DEC-012 already gives every well-formed question a 200, refusals included. An ou
 - **Decision.** The session finishes the work already in flight and then writes a handoff document with enough context for the next session to start well.
 - **Owner's words.** "this conversation is getting too long so try and wrap up what has already started before writing a handoff doc with enough context for the next session to start on a good basis."
 - **Assistant's choice, open to the owner's veto.** The handoff is `docs/handoff.md`, tracked and public like the other docs, and `CLAUDE.md` points to it.
+
+## 2026-11-12, property-review preservation
+
+### DEC-030. Preserve property review for follow-up
+
+- **Decision.** Preserve the prior property-review findings in `tests/PROPERTIES_findings.md` and point to that authoritative detailed review from `docs/handoff.md`, so the next agent can pick up the follow-up.
+- **Source.** The owner's request: "Saved these findings in `tests/PROPERTIES_findings.md` file so we can address them (and update the handoff to make sure the next agent picks it up)."
+- **Scope.** Approval to record and hand off only. This does not approve the property contracts, authorize implementation of the recommendations, or settle unresolved contract questions. Those still require owner confirmation.
