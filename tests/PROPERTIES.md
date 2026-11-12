@@ -5,12 +5,14 @@ Hypothesis runs the config tests on many generated environments, so one line cov
 
 ## Config check (`load_settings`)
 
-1. For any environment, the check reports exactly the required variables that are missing, empty, padded with whitespace, wrapped in a quote, or (for the base URL) lacking `http://` or `https://`. It lists each at most once, in the fixed order API key, base URL, model, embedding model, and it ignores every other variable. `test_reports_exactly_the_defective_variables` (`tests/test_config.py`)
-2. When every required variable is fine, the check returns the settings with the values exactly as given. It never trims, unquotes or otherwise repairs a value. `test_reports_exactly_the_defective_variables` (`tests/test_config.py`)
+1. For any environment, the check reports exactly the required variables that are missing, empty, padded with whitespace, wrapped in a quote, or (for the base URL) lacking `http://` or `https://`, and exactly the override variables (`PHARMAG_*_MODEL`) that are set and have one of the same defects except being missing. It lists each at most once, in the fixed order API key, base URL, model, embedding model, planner, worker, writer, critic, and it ignores every other variable. `test_reports_exactly_the_defective_variables` (`tests/test_config.py`)
+2. When every required variable and every set override is fine, the check returns the settings with the values exactly as given. It never trims, unquotes or otherwise repairs a value. A role whose override is unset gets the value of `OPENAI_MODEL`. `test_reports_exactly_the_defective_variables` (`tests/test_config.py`)
 3. For any environment, no problem (variable name or text) contains any variable's value, so a bad value cannot leak through a response or a log. `test_no_problem_contains_a_value` (`tests/test_config.py`)
 4. Printing the settings does not show the API key. `test_the_printed_settings_hide_the_key` (`tests/test_config.py`)
 5. When a required variable is missing and the environment holds an `OPENAI_*` name that is the real name with one character deleted, the problem text names that near-miss. `test_a_misspelled_name_is_named_when_the_real_one_is_missing` (`tests/test_config.py`)
 6. An unrelated `OPENAI_*` variable, or another required variable, is never offered as a misspelling. `test_other_openai_names_are_not_taken_for_misspellings` (`tests/test_config.py`)
+C7. With the four required variables fine, no override set gives every role the model; a clean override is used as given for its own role only. `test_unset_overrides_take_the_model_and_clean_ones_are_used_as_given` (`tests/test_config.py`)
+C8. A set but defective override (for example empty or quoted) is reported under its own name. `test_a_defective_override_is_reported_by_name` (`tests/test_config.py`)
 
 ## Search index (Index.search)
 
@@ -27,13 +29,18 @@ I8. Examples: a rare exact token ("CYP3A4") puts its one chunk first even when t
 
 ## Server and page
 
-7. The server starts and `GET /health` answers 200 whether the configuration is valid, defective or entirely absent. `test_health_is_ok_with_valid_config`, `test_health_is_degraded_but_200_with_invalid_config`, `test_server_starts_with_no_configuration_at_all` (`tests/test_api.py`)
-8. With valid configuration, `POST /ask` with a non-empty question answers 200 with a placeholder answer, no sources, and the code-set not-medical-advice sentence. `test_ask_returns_the_placeholder_with_valid_config` (`tests/test_api.py`)
+7. The server starts and `GET /health` answers 200 whether the configuration is valid, defective or entirely absent. With valid configuration it reports `status` ok and the index state `building`, `ready` or `failed`; with defective configuration it reports `degraded` and starts no build. `test_health_is_ok_with_valid_config`, `test_a_defective_config_starts_no_build`, `test_health_is_degraded_but_200_with_invalid_config`, `test_server_starts_with_no_configuration_at_all` (`tests/test_api.py`)
+8. With valid configuration and a built engine, `POST /ask` with a non-empty question answers 200 with the pipeline's `AskResponse` unchanged, every top-level field of the contract included. If the build is still running, the request waits for it. `test_ask_waits_for_the_build_and_returns_every_contract_field` (`tests/test_api.py`)
 9. With defective configuration, `POST /ask` answers 503 and names each bad variable. `test_ask_is_503_and_names_the_bad_variables_with_invalid_config` (`tests/test_api.py`)
 10. A body without a non-empty string `question` gets 422, whatever the configuration. `test_ask_rejects_a_malformed_body_with_422` (`tests/test_api.py`)
-11. The API key value never appears in `/health` or `/ask` responses, including when the key is defective. `test_health_is_degraded_but_200_with_invalid_config`, `test_ask_is_503_and_names_the_bad_variables_with_invalid_config` (`tests/test_api.py`)
+11. The API key value never appears in `/health` or `/ask` responses, including when the key is defective and when it occurs in the text of a build or pipeline exception. `test_health_is_degraded_but_200_with_invalid_config`, `test_ask_is_503_and_names_the_bad_variables_with_invalid_config`, `test_the_api_key_in_an_exception_text_never_reaches_a_response` (`tests/test_api.py`)
 12. No file in the static folder refers to another host. `test_the_page_loads_nothing_from_another_host` (`tests/test_api.py`)
 13. `GET /` serves the page and its CSS and JavaScript from the same server. `test_root_serves_the_page_and_its_assets` (`tests/test_api.py`)
+S14. `/health` reports `building` while the engine build runs and `ready` after it. `test_health_says_building_while_the_build_is_held_then_ready` (`tests/test_api.py`)
+S15. A build that fails 4 attempts leaves `/health` at `failed` with an `index_error`, and `/ask` gives 503 with `error` "index"; the next `/ask` starts a new build, which can succeed. `test_a_build_that_fails_every_attempt_gives_503_and_a_later_ask_rebuilds` (`tests/test_api.py`)
+S16. A build that fails fewer than 4 attempts and then succeeds ends `ready`. `test_a_build_that_fails_twice_then_succeeds_ends_ready` (`tests/test_api.py`)
+S17. A `PipelineError` from the pipeline gives 502 with `error` "pipeline", the failing stage, and the detail. `test_a_pipeline_error_gives_502_with_the_stage` (`tests/test_api.py`)
+S18. For any text, `_scrub` leaves no occurrence of the key in it (keys here start with `sk-`, so the replacement text cannot contain one). `test_scrub_removes_every_occurrence_of_the_key` (`tests/test_api.py`)
 
 ## Retrieval eval baseline (`evals/retrieval_eval.py`, `evals/embedding_cache.py`)
 

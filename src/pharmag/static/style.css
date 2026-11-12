@@ -58,7 +58,20 @@ button:focus-visible {
   font-weight: 600;
 }
 
-.disclaimer {
+.stats {
   font-size: 0.9rem;
   color: #444;
+}
+
+.answer {
+  white-space: pre-wrap;
+}
+
+details {
+  margin-top: 0.5rem;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
 }

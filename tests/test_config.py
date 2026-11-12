@@ -5,9 +5,14 @@ from pharmag.config import (
     API_KEY,
     BASE_URL,
     EMBEDDING_MODEL,
+    CRITIC_MODEL,
     MODEL,
+    OVERRIDES,
+    PLANNER_MODEL,
     REQUIRED,
     ConfigProblem,
+    WORKER_MODEL,
+    WRITER_MODEL,
     Settings,
     load_settings,
 )
@@ -19,9 +24,11 @@ ALNUM = st.sampled_from("abcXYZ019")
 # Starts and ends with a letter or digit, so it has no edge whitespace or quote. Anything inside.
 good_core = st.builds("{}{}{}{}{}".format, ALNUM, st.text(), st.just(SENTINEL), st.text(), ALNUM)
 
-# Variable names outside the four required ones, so they never decide the outcome.
+ALL = REQUIRED + OVERRIDES
+
+# Variable names outside the four required and four override ones, so they never decide the outcome.
 extras = st.dictionaries(st.text(min_size=1), st.text()).map(
-    lambda d: {k: v for k, v in d.items() if k not in REQUIRED}
+    lambda d: {k: v for k, v in d.items() if k not in ALL}
 )
 
 KINDS = ("valid", "missing", "empty", "padded", "quoted")
@@ -29,7 +36,7 @@ KINDS = ("valid", "missing", "empty", "padded", "quoted")
 
 @st.composite
 def variable(draw, name):
-    """Draw (kind, value) for one required variable; value is None when it is missing."""
+    """Draw (kind, value) for one variable; value is None when it is missing."""
     kinds = KINDS + ("no_scheme",) if name == BASE_URL else KINDS
     kind = draw(st.sampled_from(kinds))
     core = draw(good_core)
@@ -49,8 +56,8 @@ def variable(draw, name):
 
 @st.composite
 def environments(draw):
-    """An environment plus the kind chosen for each required variable."""
-    chosen = {name: draw(variable(name)) for name in REQUIRED}
+    """An environment plus the kind chosen for each required and override variable."""
+    chosen = {name: draw(variable(name)) for name in ALL}
     environ = draw(extras)
     environ.update({n: v for n, (_, v) in chosen.items() if v is not None})
     return environ, {n: kind for n, (kind, _) in chosen.items()}
@@ -60,7 +67,8 @@ def environments(draw):
 def test_reports_exactly_the_defective_variables(case):
     environ, kinds = case
     result = load_settings(environ)
-    defective = [n for n in REQUIRED if kinds[n] != "valid"]
+    # Missing is a defect for a required variable only; an unset override means OPENAI_MODEL.
+    defective = [n for n in ALL if kinds[n] != "valid" and not (n in OVERRIDES and kinds[n] == "missing")]
     if defective:
         assert isinstance(result, list)
         assert [p.variable for p in result] == defective
@@ -70,6 +78,10 @@ def test_reports_exactly_the_defective_variables(case):
             base_url=environ[BASE_URL],
             model=environ[MODEL],
             embedding_model=environ[EMBEDDING_MODEL],
+            planner_model=environ.get(PLANNER_MODEL, environ[MODEL]),
+            worker_model=environ.get(WORKER_MODEL, environ[MODEL]),
+            writer_model=environ.get(WRITER_MODEL, environ[MODEL]),
+            critic_model=environ.get(CRITIC_MODEL, environ[MODEL]),
         )
 
 
@@ -82,7 +94,7 @@ def test_no_problem_contains_a_value(case):
 
 
 def test_the_printed_settings_hide_the_key():
-    settings = Settings(api_key="sk-secret-xyz", base_url="u", model="m", embedding_model="e")
+    settings = Settings("sk-secret-xyz", "u", "m", "e", "m", "m", "m", "m")
     assert "sk-secret-xyz" not in repr(settings)
 
 
@@ -101,6 +113,26 @@ def test_a_misspelled_name_is_named_when_the_real_one_is_missing(name, data):
     [problem] = result
     assert problem.variable == name
     assert typo in problem.problem
+
+
+def test_unset_overrides_take_the_model_and_clean_ones_are_used_as_given():
+    base = {API_KEY: "k", BASE_URL: "https://x.example", MODEL: "m", EMBEDDING_MODEL: "e"}
+    plain = load_settings(base)
+    assert (plain.planner_model, plain.worker_model, plain.writer_model, plain.critic_model) == ("m",) * 4
+    mixed = load_settings({**base, WORKER_MODEL: "big", CRITIC_MODEL: "small"})
+    assert (mixed.planner_model, mixed.worker_model, mixed.writer_model, mixed.critic_model) == (
+        "m",
+        "big",
+        "m",
+        "small",
+    )
+
+
+def test_a_defective_override_is_reported_by_name():
+    base = {API_KEY: "k", BASE_URL: "https://x.example", MODEL: "m", EMBEDDING_MODEL: "e"}
+    assert load_settings({**base, WRITER_MODEL: ""}) == [ConfigProblem(WRITER_MODEL, "is empty")]
+    [problem] = load_settings({**base, PLANNER_MODEL: "'big'"})
+    assert problem.variable == PLANNER_MODEL
 
 
 def test_other_openai_names_are_not_taken_for_misspellings():
