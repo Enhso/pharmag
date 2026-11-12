@@ -59,6 +59,8 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 - Each role's model comes from `PHARMAG_PLANNER_MODEL`, `PHARMAG_WORKER_MODEL`, `PHARMAG_WRITER_MODEL`, or `PHARMAG_CRITIC_MODEL`. An unset name means `OPENAI_MODEL` (DEC-025). All roles share one key and one base URL.
 - Starting limits are six workers at once, ten tool calls per worker, and one retry round (DEC-026). The eval script's measured latency and cost decide the final numbers.
 - The smoke test on 2026-11-11 measured single calls at 1 to 5 seconds for small prompts, and one embedding request of 256 passages at 8.5 seconds. These are single measurements.
+- A live build of the index took 10.3 seconds for the 451 chunks (one run, four parallel batches of 128).
+- The first retrieval eval is in `evals/results/retrieval.json`. With the raw question as the query, 12 of 13 gold passages are in the top six for the heading-tree chunks, against 9 of 13 for 1,000-character windows. The file lists the caveats. In no mode does the search find the warfarin table row that names ibuprofen, which is the case `find_interactions` covers.
 - Each LLM call records input tokens, cached input tokens, and output tokens, and the log warns when the cache hit rate drops.
 - The streaming endpoint sends each `TraceEvent` as it happens and ends with the full `AskResponse`.
 

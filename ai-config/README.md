@@ -23,7 +23,7 @@ The plugin registry lists pstack 0.9.135 as installed. The session loaded the sk
 
 | Server | Used for | First used |
 |---|---|---|
-| context7 | Current PydanticAI 2.0 docs, read before the architecture sketch. Current DeepEval docs, read before the eval step. Current uv and FastAPI docs, read by the builder subagent before the skeleton | 2026-11-11 |
+| context7 | Current PydanticAI 2.0 docs, read before the architecture sketch. Current DeepEval docs, read before the eval step. Current uv and FastAPI docs, read by the builder subagent before the skeleton. Current bm25s and openai SDK docs, read by the builder subagent before the index | 2026-11-11 |
 
 The sessions also used tools that are neither skills nor MCP servers: Claude Code's built-in web search, Docker, and `curl`.
 
@@ -35,7 +35,7 @@ The sessions also used tools that are neither skills nor MCP servers: Claude Cod
 | `agents/verifier.md` | Subagent that checks finished work against the plan |
 | `pstack-models.md` | Which model and effort each pstack role runs on |
 
-The `builder` agent wrote the walking skeleton on 2026-11-11. The session stopped it before its report, so the main session read every file and ran the checks itself. A web-fetch helper read one upstream license file.
+Five runs used the `builder` definition on 2026-11-11: the walking skeleton, the corpus parser, the search index, the four tools, and the retrieval eval script. The parser, the index, and the tools were each built in a separate git worktree and merged by the main session. Two runs ended before their report, one stopped by the session and one by a usage limit. In every case the main session read the diff and reran the checks before it merged. A web-fetch helper read one upstream license file. The `verifier` definition has not run.
 
 ## CLAUDE.md files
 

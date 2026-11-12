@@ -179,3 +179,11 @@ Point numbers refer to the draft of `docs/architecture.md` that the owner review
 ### Point 5 of the sketch needed no new ruling
 
 DEC-012 already gives every well-formed question a 200, refusals included. An out-of-scope question gets a short refusal with the disclaimer.
+
+## 2026-11-12, session handoff
+
+### DEC-029. Wrap up and hand off
+
+- **Decision.** The session finishes the work already in flight and then writes a handoff document with enough context for the next session to start well.
+- **Owner's words.** "this conversation is getting too long so try and wrap up what has already started before writing a handoff doc with enough context for the next session to start on a good basis."
+- **Assistant's choice, open to the owner's veto.** The handoff is `docs/handoff.md`, tracked and public like the other docs, and `CLAUDE.md` points to it.
