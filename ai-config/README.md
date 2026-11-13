@@ -15,6 +15,7 @@ Each skill is a verbatim copy, taken on the day of first use.
 | `pstack:technical-writing` | `skills/pstack/technical-writing/` | Same plugin | MIT | Style for `docs/scoping.md` and `docs/decisions.md` | 2026-11-11 |
 | `writing-for-agents` | `skills/mattpocock/writing-for-agents/` | The owner's user-level skills folder. Upstream is [mattpocock/skills](https://github.com/mattpocock/skills) | MIT, see `skills/mattpocock/LICENSE`. The upstream LICENSE file was read on 2026-11-11 | Wording of the root `CLAUDE.md` | 2026-11-11 |
 | `property-based-testing` | `skills/property-based-testing/` | The owner's installed agent skills | Not stated in installed copy | Reviewing `tests/PROPERTIES.md` | 2026-11-12 |
+| `impeccable` | `skills/impeccable/`: the skill text and its reference files. Its launcher scripts and their data are not copied | [impeccable](https://github.com/pbakaus/impeccable), plugin cache version 4.9.0 | Apache 2.0, stated in the skill's front matter | The design pass for the page: the product record (`PRODUCT.md`), the surface brief under `.impeccable/`, the build checks, and the finish review | 2026-11-13 |
 | `artifact-diagramming` | Not copied. The skill ships inside Claude Code and states no license that permits a copy | Claude Code, built in | Not stated | Layout rules for the system map in the presentation overview | 2026-11-12 |
 
 The plugin registry lists pstack 0.9.135 as installed. The first session loaded the skills from the 0.9.134 cache folder, so the copies come from that folder. The session of 2026-11-12 loaded `poteto-mode` from the 0.9.136 cache folder; the copy here was not refreshed.
@@ -58,7 +59,7 @@ Versions come from the Claude Code plugin registry on 2026-11-11. No plugin file
 | pstack | 0.9.135 | Session-start hook that routes design tasks through `poteto-mode`. Source of three skills above |
 | ponytail | 5.3.3 | Session-start hook that sets a "smallest complete change" working mode, level `full` |
 | potion-hooks (local) | 1.0.0 | Hook that rejects commits carrying AI co-author lines |
-| impeccable | 4.8.2 | Planned for the frontend design pass. Not used yet |
+| impeccable | 4.9.0 | Source of the `impeccable` skill above, used for the page's design pass on 2026-11-13. The registry listed 4.8.2 on 2026-11-11 |
 | womm-skills | 07a94b5516d3 | Holds reusable specs that the session checks before coding against a library. On 2026-11-12 the planning session read the spec on JSON envelopes in LLM output and did not apply it, because PydanticAI returns typed output through a tool call. It passed the spec on patching module-level imports to the builder that wrote the API tests |
 | claude-hud | 0.15.3 | Status line only |
 | hegel-skill | 2.1.0 | Installed, not used |

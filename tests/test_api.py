@@ -331,3 +331,20 @@ def test_root_serves_the_page_and_its_assets(client_for):
 def test_the_page_loads_nothing_from_another_host():
     for path in STATIC_DIR.iterdir():
         assert not re.search(r"https?://|//[a-z]", path.read_text()), path.name
+
+
+def test_the_page_names_every_corpus_medicine_and_offers_the_four_public_questions():
+    root = STATIC_DIR.parents[2]
+    page = (STATIC_DIR / "index.html").read_text()
+    medicines = {path.stem.split("-", 1)[1] for path in (root / "corpus").glob("*-*.md")}
+    questions = json.loads((root / "evals" / "questions.json").read_text())["questions"]
+    public = [q["question"] for q in questions if q["id"].startswith("P")]
+    assert (len(medicines), len(public)) == (10, 4)
+    for text in (*medicines, *public):
+        assert text in page, text
+
+
+def test_the_page_script_never_parses_text_as_html():
+    script = (STATIC_DIR / "app.js").read_text()
+    for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "DOMParser", "eval("):
+        assert sink not in script, sink

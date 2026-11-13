@@ -254,3 +254,21 @@ The session started with checks on the pushed proof of concept: a clean clone, a
 - **Owner's words.** "nothing that should stay private should be published", and "transparency is really important to me."
 - **Rejected.** Keeping the transcripts out of the repo, which was the recommendation accepted an hour earlier in DEC-034.
 - **No second check.** The owner told the assistant to take the cleaning agent's result as it is, to save usage: "trust the agent's work (blindly)." The main session ran no independent check of the cleaned files. The commit still ran the standing scan of the staged diff for the env values.
+
+### DEC-037. The page: direction, audience, disclaimer line, samples, and live steps
+
+- **Decision.**
+  - The page is designed first for an assessor who runs the container and opens it cold, and second for the live demo on a shared screen.
+  - The visual direction is the owner's own: white ground, near-black text in the system sans-serif, monospace only for file and tool names, one muted accent, and no cards. The empty page is one large text field with four quiet sample questions. After a question is sent, the question becomes a header above four step rows (Plan, Retrieve, Write, Review), the cited answer, the sources, and the disclaimer.
+  - The line pinned to the bottom of an answer reads "For research and technical demonstration only." followed by the API's `disclaimer` sentence. The API's text does not change (DEC-032).
+  - The sample questions are the four public questions, word for word (DEC-027).
+  - `POST /ask/stream` feeds the page (DEC-012), and the pipeline emits the plan and the verdict counts as events, so the page shows the sub-questions, the tool calls, and the verdicts while the answer is still being worked out. `/ask` and its response do not change.
+  - The page builds the cautions, the sources, and the disclaimer from the response's own fields and cuts that tail from the `answer` text, so nothing shows twice.
+- **Rejected.** A stream with stage events only. No stream, with the page waiting on `/ask`. The API's sentence alone, or a short page line alone, as the disclaimer. Four non-public sample questions, or a mix.
+- **Owner's words.** The look is "blank pharmaceutical / high-end cosmetic", and "serious, clinical, quiet, precise — like high-end apothecary packaging or a well-typeset medical information leaflet, never a hospital portal or startup landing page."
+- **Reason.** The owner chose each recommended option in one round of four questions.
+- **The assistant's choices, open to the owner's veto.**
+  - A third new event, `drafted`, carries the number of claims in each draft. The owner approved two (the plan and the verdict counts). The Write row shows this count.
+  - Retrieval and tool use are one row, Retrieve, because in this pipeline a retrieval is a tool call. The row names the tools and counts the passages and files.
+  - No table rendering, because the writer's prompt allows paragraphs and bullets only. No dark theme. No fallback from the stream to `/ask`.
+  - The main session writes the three page files, because the design judgment is the task. A builder agent wrote the stream endpoint.

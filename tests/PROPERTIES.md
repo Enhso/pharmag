@@ -46,6 +46,8 @@ S18. For any text, `_scrub` leaves no occurrence of the key in it (keys here sta
 69. Any other exception during a stream ends it with an `error` frame whose `error` is "internal" and whose detail is the type name and message, with the API key removed. `test_any_other_exception_in_the_stream_is_an_internal_error_frame_with_no_key` (`tests/test_api.py`)
 70. Before the stream starts, a configuration error gives 503 naming each bad variable and a failed index build gives 503 with `error` "index", the same bodies as `/ask`. `test_the_stream_is_503_for_a_config_error_and_for_a_failed_index_build` (`tests/test_api.py`)
 71. A body without a non-empty string `question` gets 422 from `/ask/stream`. `test_the_stream_rejects_a_malformed_body_with_422` (`tests/test_api.py`)
+74. The page names every medicine that has a file in `corpus/`, and offers each of the four public questions of `evals/questions.json` word for word. `test_the_page_names_every_corpus_medicine_and_offers_the_four_public_questions` (`tests/test_api.py`)
+75. The page's script uses no call that parses text as HTML or runs it (`innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `DOMParser`, `eval`), so text from the model or the corpus can only reach the page as text. `test_the_page_script_never_parses_text_as_html` (`tests/test_api.py`)
 
 ## Retrieval eval baseline (`evals/retrieval_eval.py`, `evals/embedding_cache.py`)
 

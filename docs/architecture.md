@@ -34,7 +34,7 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 | File | Owns |
 |---|---|
 | `config.py` | Settings, the strict config check, and the four role overrides |
-| `api.py` | Routes: `/health`, `/ask`, and the static page. It builds the engine in the background. `/ask/stream` is not built yet |
+| `api.py` | Routes: `/health`, `/ask`, `/ask/stream`, and the static page. It builds the engine in the background |
 | `models.py` | The types above |
 | `corpus.py` | Files to chunks: heading tree, flattened tables, the three label formats, canonical section keys |
 | `index.py` | Embeddings in a NumPy array, BM25, rank fusion, metadata filters |
@@ -62,7 +62,7 @@ An out-of-scope question skips stages 2 to 7 and gets a short refusal with the d
 - A live build of the index took 10.3 seconds for the 451 chunks (one run, four parallel batches of 128).
 - The first retrieval eval is in `evals/results/retrieval.json`. With the raw question as the query, 12 of 13 gold passages are in the top six for the heading-tree chunks, against 9 of 13 for 1,000-character windows. The file lists the caveats. In no mode does the search find the warfarin table row that names ibuprofen, which is the case `find_interactions` covers.
 - Each LLM call records input tokens, cached input tokens, and output tokens, and the log warns when the cache hit rate drops.
-- The streaming endpoint will send each `TraceEvent` as it happens and end with the full `AskResponse`. The pipeline already emits the events; the endpoint is not built yet.
+- `POST /ask/stream` sends each `TraceEvent` as a server-sent event while the pipeline runs, and ends with the full `AskResponse` or with an error that names the stage. Beside `started` and `finished` for each stage and `tool_call` for each tool call, the pipeline emits `planned` (scope, reason, sub-questions), `drafted` (the claim count of each draft), and `reviewed` (verdict counts after each review). Tools that run in worker threads hand their events to the event loop, and a client that disconnects cancels the run. The page reads this stream; `/ask` is unchanged.
 - A request in which every worker fails gives HTTP 502 at the research stage. A failed index build gives 503, and the next question starts the build again.
 
 ## Chunk size, from the corpus

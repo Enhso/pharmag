@@ -3,19 +3,85 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Pharmacology research assistant</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http:%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='4' fill='%231d6570'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body data-view="empty">
+  <header class="top">
+    <h1 class="brand">Pharmacology research assistant</h1>
+    <button type="button" id="back" class="link" hidden><span id="back-label"></span> <kbd>Esc</kbd></button>
+  </header>
+
   <main>
-    <h1>Pharmacology research assistant</h1>
-    <form id="ask-form">
+    <form id="ask" class="ask" novalidate>
       <label for="question">Your question</label>
-      <textarea id="question" name="question" rows="3"></textarea>
-      <button type="submit">Ask</button>
+      <textarea id="question" name="question" rows="1" placeholder="Ask about a medicine" autocomplete="off" enterkeyhint="send" autofocus></textarea>
+      <p class="send">
+        <button type="submit" class="link">Ask</button>
+        <span class="keys"><kbd>Enter</kbd> to ask, <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line</span>
+      </p>
+      <ul id="samples" class="samples" aria-label="Sample questions">
+        <li><button type="button">What are the main contraindications for warfarin?</button></li>
+        <li><button type="button">Compare the contraindications of warfarin and apixaban. What conditions are shared and which are unique to each drug?</button></li>
+        <li><button type="button">A patient currently on warfarin is prescribed sertraline. What is the risk of bleeding and what monitoring is recommended?</button></li>
+        <li><button type="button">A patient with an eGFR of 25 mL/min is being considered for metformin. Is metformin contraindicated at this level of renal function, and what is the threshold</button></li>
+      </ul>
     </form>
-    <section id="result" aria-live="polite"></section>
+
+    <div id="result" class="result">
+      <h2 id="asked" class="asked"></h2>
+
+      <ol id="steps" class="steps" aria-label="How the answer was worked out">
+        <li class="step" data-step="plan" data-state="pending">
+          <details>
+            <summary><span class="dot"></span><span class="name">Plan</span><span class="sum"></span><span class="time"></span></summary>
+            <div class="detail"></div>
+          </details>
+        </li>
+        <li class="step" data-step="retrieve" data-state="pending">
+          <details>
+            <summary><span class="dot"></span><span class="name">Retrieve</span><span class="sum"></span><span class="time"></span></summary>
+            <div class="detail"></div>
+          </details>
+        </li>
+        <li class="step" data-step="write" data-state="pending">
+          <div class="row"><span class="dot"></span><span class="name">Write</span><span class="sum"></span><span class="time"></span></div>
+        </li>
+        <li class="step" data-step="review" data-state="pending">
+          <details>
+            <summary><span class="dot"></span><span class="name">Review</span><span class="sum"></span><span class="time"></span></summary>
+            <div class="detail"></div>
+          </details>
+        </li>
+      </ol>
+
+      <div id="problem" class="problem" role="alert" hidden></div>
+
+      <article id="answer" class="answer" aria-labelledby="asked" tabindex="-1" hidden>
+        <div id="prose" class="prose"></div>
+        <section id="cautions" hidden>
+          <h3>Cautions</h3>
+          <ul class="cautions"></ul>
+        </section>
+        <section id="sources" hidden>
+          <h3>Sources</h3>
+          <ul class="files"></ul>
+        </section>
+        <p id="meta" class="meta"></p>
+      </article>
+    </div>
+
+    <noscript><p class="problem">This page needs JavaScript. The API answers without it: POST a JSON body with a question to /ask.</p></noscript>
   </main>
+
+  <footer class="foot">
+    <p class="corpus"><b>Corpus</b> acetaminophen, albuterol, amoxicillin, apixaban, aspirin, atorvastatin, ibuprofen, metformin, sertraline, warfarin. Twenty-one local documents: a DailyMed label and a MedlinePlus page for each medicine, and one glossary.</p>
+    <p id="disclaimer" class="disclaimer" role="note"></p>
+  </footer>
+
+  <p id="status" role="status" aria-live="polite"></p>
   <script src="/static/app.js" defer></script>
 </body>
 </html>

@@ -41,6 +41,18 @@ An answer can take a minute or more.
 | `timings` | Seconds per stage, plus `total` |
 | `usage` | Request and token counts, in total and per role |
 
+### `POST /ask/stream` and the page
+
+The page at `/` shows the work as it happens: four step rows (Plan, Retrieve, Write, Review) with the sub-questions, each tool call with the passages it returned, and the critic's verdicts, then the cited answer, the sources with their quotes, and the disclaimer. It is plain HTML, CSS and JavaScript served by the same process, with no build step and nothing loaded from another host.
+
+`POST /ask/stream` feeds it. The body is the same as for `/ask`. The response is `text/event-stream`: one `event: trace` frame per pipeline event (`stage`, `kind`, `data`, `elapsed`), then one `event: answer` frame with the same JSON `/ask` returns, or one `event: error` frame with the failing stage. A defective configuration and a failed index build answer 503 before the stream starts, as on `/ask`. Closing the connection cancels the run.
+
+```
+curl -sN -X POST localhost:8000/ask/stream \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "What are the main contraindications for warfarin?"}'
+```
+
 ## Environment variables
 
 Set these four. The server stays up without them but every `/ask` call fails with a message that names the variable.
