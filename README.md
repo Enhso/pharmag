@@ -94,7 +94,7 @@ The tests need no network and no `.env`.
 | `src/pharmag/pipeline.py`, `agents.py`, `tools.py`, `index.py`, `corpus.py`, `models.py` | The eight stages, the role models, the corpus tools, the search index, the corpus parser, and the shared types |
 | `src/pharmag/static/` | The web page |
 | `tests/` | Tests; `tests/PROPERTIES.md` lists what each property test checks |
-| `evals/` | Retrieval evaluation scripts |
+| `evals/` | The eval questions, the retrieval evaluation, and `live_check.py`, which asks the questions against a running server |
 | `docs/` | Architecture, scoping and decision log |
 
 ## AI coding configuration

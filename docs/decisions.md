@@ -247,3 +247,9 @@ The session started with checks on the pushed proof of concept: a clean clone, a
 
 - **Decision.** The fixes are verified with one run of the eleven questions, not two. The session then prepares the handoff for a design session later the same morning.
 - **Owner's words.** "one run and then set the stage for the design polish we'll do later in the morning (in another session). we don't have a lot of usage to spend so be careful not to go overboard on non-essential things."
+
+### DEC-036. Cleaned session transcripts are published
+
+- **Decision.** The cleaned transcripts of the working sessions go into `ai-config/transcripts/`, and the ignore rule for that folder is removed. An agent cleans the transcript of the second session the way the first was cleaned, and nothing that should stay private is published. This replaces the transcript item of DEC-034.
+- **Owner's words.** "nothing that should stay private should be published", and "transparency is really important to me."
+- **Rejected.** Keeping the transcripts out of the repo, which was the recommendation accepted an hour earlier in DEC-034.
