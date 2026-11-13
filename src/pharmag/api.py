@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
@@ -11,6 +12,10 @@ from pydantic import BaseModel, Field
 
 from pharmag.config import Settings, load_settings
 from pharmag.pipeline import DISCLAIMER, Engine, PipelineError, answer, build_engine
+
+_log = logging.getLogger("pharmag")  # its own handler: the root logger would also print the HTTP client's request lines
+_log.setLevel(logging.INFO)
+_log.addHandler(logging.StreamHandler())
 
 STATIC_DIR = Path(__file__).parent / "static"
 CORPUS_DIR = Path("corpus")

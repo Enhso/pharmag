@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 import threading
@@ -12,6 +13,11 @@ from hypothesis import strategies as st
 from pharmag.api import DISCLAIMER, STATIC_DIR, _scrub, app
 from pharmag.models import AskResponse, CriticReport, Plan, Usage
 from pharmag.pipeline import PipelineError
+
+def test_importing_the_api_enables_the_pipelines_usage_lines_without_touching_the_root_logger():
+    assert logging.getLogger("pharmag.pipeline").isEnabledFor(logging.INFO)
+    assert not logging.getLogger("openai").isEnabledFor(logging.INFO)
+
 
 GOOD_ENV = {
     "OPENAI_API_KEY": "sk-test-key",
