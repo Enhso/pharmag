@@ -8,6 +8,8 @@ The deadline is 2026-11-13 at 23:59 Casablanca time. That is 23:59 UTC: the mach
 
 `main` is pushed and is the submission as it stands. It meets the brief's hard constraints H1 to H12. 132 tests pass with no network (`uv run --locked pytest -q`).
 
+Two late changes: the product is named PharmAg in the page's header and tab title (DEC-038), and the cleaned transcript of the morning session is published in `ai-config/transcripts/` (DEC-039). No tests were rerun for the rename, on the owner's word; the header and title were read back from the rebuilt container.
+
 Built this session (DEC-037):
 
 - **`POST /ask/stream`.** Server-sent events: one `trace` frame per pipeline event, then one `answer` frame equal to the `/ask` body, or one `error` frame with the stage. `/ask` is unchanged. The pipeline emits three new events: `planned`, `drafted`, `reviewed`. A client that disconnects cancels the run.
@@ -33,7 +35,7 @@ A reviewer agent that saw only the brief and the screenshots returned eight fixe
 | File | Why |
 |---|---|
 | `CLAUDE.md` | The working agreement. The owner decides, and every ruling is logged |
-| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-037. Do not reopen a ruling |
+| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-039. Do not reopen a ruling |
 | `docs/architecture.md` | The design of the core, matching what is built |
 | `src/pharmag/models.py` | `AskResponse` and `TraceEvent`, the two shapes the page reads |
 | `PRODUCT.md` | Who the page is for and what it must show |
