@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-13T12:27:07.744Z",
+        "reason": "The owner's brief pins the stack in its own words: 'neutral sans-serif system stack (Inter / SF Pro / system-ui - zero external font dependencies)'. Inter is only the first name in a stack that loads no font file."
+      }
+    ]
+  }
+}
