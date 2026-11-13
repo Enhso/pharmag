@@ -87,7 +87,7 @@ T8. Examples on the real corpus: warfarin contraindications, Eliquis resolving t
 
 The grounding tests draw spans from the real corpus passages. The pipeline tests run the real corpus and tools with a fake embedder and scripted `FunctionModel`s, so they need no network.
 
-25. Any contiguous span of a passage passes the quote check, also after its whitespace is reflowed and its case changed. `test_any_span_of_a_passage_passes_after_reflow_and_case_change` (`tests/test_grounding.py`)
+25. Any run of whole tokens of a passage (words, numbers with their decimal or thousands separators, comparison signs) passes the quote check, also after its whitespace is reflowed, its case changed, and punctuation added between the tokens or at either end. A span that starts or ends inside a word is not covered. `test_any_run_of_whole_tokens_passes_after_reflow_case_change_and_punctuation` (`tests/test_grounding.py`)
 26. A quote that contains a token absent from the passage fails the quote check. `test_a_quote_with_a_token_absent_from_the_passage_fails` (`tests/test_grounding.py`)
 27. `markers` returns exactly the numbers written into a prose, in order, for `[1][2]` and `[1, 2]` alike. `test_markers_returns_the_numbers_written_into_the_prose_in_order` (`tests/test_grounding.py`)
 28. After `drop_dangling`, no dangling marker remains and the result is exactly the sentences without one, so the words of every dropped sentence are gone. `test_drop_dangling_leaves_no_dangling_marker_and_keeps_every_clean_sentence` (`tests/test_grounding.py`)
@@ -121,3 +121,5 @@ The grounding tests draw spans from the real corpus passages. The pipeline tests
 56. A claim with no critic verdict is unsupported and removed. `test_a_claim_the_critic_gave_no_verdict_is_treated_as_unsupported` (`tests/test_pipeline.py`)
 57. A citation to a real chunk that no tool returned in this request fails the quote check, in the whole pipeline. `test_a_cited_chunk_that_no_tool_returned_in_this_request_fails_the_quote_check` (`tests/test_pipeline.py`)
 58. `sources` and `citations` leave out the file of a supported claim whose marker is not in the final prose. `test_sources_leave_out_the_file_of_a_claim_whose_marker_is_not_in_the_final_prose` (`tests/test_pipeline.py`)
+59. Example: on real corpus chunks, a quote whose words are all right but which ends with a period the passage lacks, or whose passage escapes brackets with backslashes, passes; a heading stitched to a list item and a paraphrase fail. `test_real_quotes_that_differ_only_in_punctuation_pass_and_a_stitched_or_paraphrased_quote_fails` (`tests/test_grounding.py`)
+60. Example: "5 mg" does not occur in "0.5 mg", "< 30" does not occur in "≥ 30", "the" does not occur in "other", and a list item matches through its bullet. `test_the_quote_check_compares_whole_words_and_whole_numbers` (`tests/test_grounding.py`)

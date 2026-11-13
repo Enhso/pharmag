@@ -1,3 +1,4 @@
+import unicodedata
 from pathlib import Path
 
 from hypothesis import assume, given
@@ -5,6 +6,7 @@ from hypothesis import strategies as st
 
 from pharmag.corpus import load_corpus
 from pharmag.grounding import (
+    _TOKEN,
     dangling_markers,
     drop_dangling,
     drop_sentences,
@@ -32,14 +34,24 @@ def span_of_a_passage(draw):
     return passage, passage[a:b]
 
 
-@given(span_of_a_passage(), st.lists(whitespace, min_size=40, max_size=40), st.sampled_from(["keep", "upper", "lower"]))
-def test_any_span_of_a_passage_passes_after_reflow_and_case_change(drawn, gaps, case):
-    passage, span = drawn
-    assume(normalize(span))
-    pieces = iter(gaps * 100)
-    reflowed = "".join(next(pieces) if ch.isspace() else ch for ch in span)
-    quote = {"keep": reflowed, "upper": reflowed.upper(), "lower": reflowed.lower()}[case]
-    assert quote_occurs(quote, passage)
+@st.composite
+def token_run_of_a_passage(draw):
+    """A passage and a run of its whole tokens, written back with the given separators and a punctuated end."""
+    passage = draw(st.sampled_from(PASSAGES))
+    tokens = _TOKEN.findall(unicodedata.normalize("NFKC", passage).casefold())
+    a = draw(st.integers(0, len(tokens) - 1))
+    b = draw(st.integers(a + 1, len(tokens)))
+    # every separator holds a space, so two numbers never fuse into one
+    sep = st.text(alphabet=" \t\n.,;:()[]-*_\\\"'", min_size=1, max_size=4).map(lambda s: " " + s)
+    seps = draw(st.lists(sep, min_size=b - a + 1, max_size=b - a + 1))
+    quote = seps[0] + "".join(t + s for t, s in zip(tokens[a:b], seps[1:]))
+    return passage, quote
+
+
+@given(token_run_of_a_passage(), st.sampled_from(["keep", "upper", "lower"]))
+def test_any_run_of_whole_tokens_passes_after_reflow_case_change_and_punctuation(drawn, case):
+    passage, quote = drawn
+    assert quote_occurs({"keep": quote, "upper": quote.upper(), "lower": quote.lower()}[case], passage)
 
 
 @given(span_of_a_passage(), st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789", min_size=1, max_size=12))
@@ -111,6 +123,31 @@ def test_sentences_with_returns_the_sentences_that_carry_a_marker():
 def test_the_quote_check_ignores_markdown_emphasis_and_unicode_compatibility_forms():
     assert quote_occurs("the **ﬁrst** dose", "The first  dose is")  # ligature, emphasis, spacing
     assert quote_occurs("１０ mg", "take 10 mg daily")  # full-width digits
+
+
+REAL_QUOTES = {  # worker quotes from live runs, checked against the real corpus chunks
+    "dailymed-sertraline.md#L324-358": "For patients taking warfarin, carefully monitor the international normalized ratio.",
+    "dailymed-warfarin.md#L231-235": "More frequent INR monitoring should be performed when starting or stopping other drugs, including botanicals, or when changing dosages of other drugs.",
+    "medlineplus-ibuprofen.md#L7-15": "Tell your doctor if you take any of the following medications: anticoagulants ('blood thinners'); aspirin; other NSAIDs such as naproxen (Aleve, Naprosyn); oral steroids such as dexamethasone, methylprednisolone (Medrol), and prednisone (Rayos).",
+    "medlineplus-warfarin.md#L7-19": "Keep all appointments with your doctor and the laboratory. Your doctor will order a blood test (PT [prothrombin test] reported as INR [international normalized ratio] value) regularly to check your body's response to warfarin.",
+    "medlineplus-sertraline.md#L73-83": "Some side effects can be serious. If you experience any of the following symptoms or those listed in the IMPORTANT WARNING or SPECIAL PRECAUTIONS section, call your doctor immediately: - abnormal bleeding or bruising",
+    "dailymed-ibuprofen.md#L302-315": "Instruct patients to seek medical advice if they observe any indicative signs or symptoms of GI ulcerations and bleeding, including epigastric pain, dyspepsia, melena, and hematemesis.",
+}
+BY_ID = {c.id: c.text for c in CHUNKS}
+
+
+def test_real_quotes_that_differ_only_in_punctuation_pass_and_a_stitched_or_paraphrased_quote_fails():
+    results = {cid: quote_occurs(q, BY_ID[cid]) for cid, q in REAL_QUOTES.items()}
+    assert [cid for cid, ok in results.items() if ok] == list(REAL_QUOTES)[:4]
+    assert not results["medlineplus-sertraline.md#L73-83"] and not results["dailymed-ibuprofen.md#L302-315"]
+
+
+def test_the_quote_check_compares_whole_words_and_whole_numbers():
+    assert not quote_occurs("5 mg", "take 0.5 mg daily")
+    assert not quote_occurs("eGFR < 30", "eGFR ≥ 30 mL")
+    assert not quote_occurs("the", "other drugs")
+    assert quote_occurs("Malignant hypertension", "- Malignant hypertension\n- x")
+    assert quote_occurs("0.5 mg", "take 0.5 mg daily") and quote_occurs("eGFR ≥ 30", "eGFR ≥ 30 mL")
 
 
 def test_failed_claims_reads_every_citation_of_a_claim():
