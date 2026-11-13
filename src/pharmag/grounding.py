@@ -10,6 +10,7 @@ _LEADING_MARKERS = re.compile(rf"{_MARKER.pattern}(?:\s*{_MARKER.pattern})*")
 _SENTENCE_BREAK = re.compile(
     r"((?<=[.!?])(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bSt\.)(?<!\bvs\.)(?<!\bDr\.)\s+(?=[A-Z0-9\[(]|-\s)|\n+)"
 )
+_TOKEN = re.compile(r"\d+(?:[.,]\d+)*|[^\W_]+|[<>=≤≥±%]")
 
 
 def normalize(text: str) -> str:
@@ -17,9 +18,14 @@ def normalize(text: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", text).replace("*", "").split()).casefold()
 
 
+def _tokens(text: str) -> list[str]:
+    return _TOKEN.findall(unicodedata.normalize("NFKC", text).casefold())
+
+
 def quote_occurs(quote: str, passage: str) -> bool:
-    wanted = normalize(quote)
-    return bool(wanted) and wanted in normalize(passage)
+    """The quote's tokens (whole words, whole numbers, comparison signs) are a contiguous run of the passage's."""
+    wanted, have = _tokens(quote), _tokens(passage)
+    return bool(wanted) and any(have[i : i + len(wanted)] == wanted for i in range(len(have) - len(wanted) + 1))
 
 
 def failed_claims(draft: Draft, evidence: Mapping[str, Chunk]) -> dict[int, str]:

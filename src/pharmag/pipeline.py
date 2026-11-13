@@ -210,7 +210,11 @@ async def _check(req: _Request, draft: Draft) -> tuple[list[ClaimVerdict], list[
         failed = failed_claims(draft, req.evidence)
     async with req.stage("review"):
         cited = dict.fromkeys(c.chunk_id for claim in draft.claims for c in claim.citations)
-        passages = "\n\n".join(f"--- {cid}\n{req.evidence[cid].text}" for cid in cited if cid in req.evidence)
+        passages = "\n\n".join(
+            f"--- {cid} | section: {_section_path(req.evidence[cid])}\n{req.evidence[cid].text}"
+            for cid in cited
+            if cid in req.evidence
+        )
         review = await req.run(
             "critic",
             critic,
@@ -285,7 +289,7 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
             async with req.stage("retry"):
                 pairs += await _research(req, "retry", [(q, q) for q in queries[:MAX_WORKERS]])
                 problems = "\n".join(f"[{v.claim}] {v.status}: {v.reason}" for v in verdicts)
-                draft = await req.run(
+                revised = await req.run(
                     "writer",
                     writer,
                     f"Question: {question}\n\nFindings, old and new:\n{_findings_text(pairs)}\n\n"
@@ -294,25 +298,29 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
                     "Write a revised draft. Support each unsupported claim with the findings, or leave it out when the "
                     "findings do not support it. Give every factual sentence a marker.",
                 )
+            new_verdicts, new_unmarked = await _check(req, revised)  # the first draft stays until this passes
         except PipelineError as e:  # DEC-007: the first draft ships with the flags that remain
             log.warning("the retry round failed; answering from the first round: %s", e)
             break
-        verdicts, unmarked = await _check(req, draft)
+        draft, verdicts, unmarked = revised, new_verdicts, new_unmarked
         rounds += 1
 
     prose = draft.answer
     redacted = bool(_unsupported(verdicts) or unmarked)
     if redacted:
-        async with req.stage("redact"):
-            removed = "\n".join(f"[{v.claim}] {draft.claims[v.claim - 1].text}" for v in _unsupported(verdicts))
-            prose = await req.run(
-                "writer",
-                redactor,
-                "Rewrite this answer without the claims and statements listed below. Keep every other sentence, "
-                "and keep each marker's number as it is; do not renumber. Return only the prose.\n\n"
-                f"Answer:\n{draft.answer}\n\nClaims to remove:\n{removed or '(none)'}\n\n"
-                "Statements to remove:\n" + "\n".join(f"- {u}" for u in unmarked),
-            )
+        try:
+            async with req.stage("redact"):
+                removed = "\n".join(f"[{v.claim}] {draft.claims[v.claim - 1].text}" for v in _unsupported(verdicts))
+                prose = await req.run(
+                    "writer",
+                    redactor,
+                    "Rewrite this answer without the claims and statements listed below. Keep every other sentence, "
+                    "and keep each marker's number as it is; do not renumber. Return only the prose.\n\n"
+                    f"Answer:\n{draft.answer}\n\nClaims to remove:\n{removed or '(none)'}\n\n"
+                    "Statements to remove:\n" + "\n".join(f"- {u}" for u in unmarked),
+                )
+        except PipelineError as e:  # stage 8 removes the banned sentences from the draft's own prose
+            log.warning("the redaction failed; stage 8 removes the sentences in code: %s", e)
 
     async with req.stage("respond"):
         by_claim = {v.claim: v for v in verdicts}

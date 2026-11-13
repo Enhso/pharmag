@@ -154,6 +154,54 @@ def test_a_follow_up_that_the_retry_fixes_needs_no_redaction():
     assert r.critic.removed == [] and r.sources == [WARFARIN.file] and "[1]" in r.answer
 
 
+def test_a_worker_whose_quote_is_not_in_the_passage_is_sent_back_inside_the_same_call():
+    bad = Findings(
+        findings=[Finding(statement="x", chunk_id=WARFARIN.chunk_id, quote="words that are not there at all")], not_found=""
+    )
+    worker_calls = []
+
+    def play(messages, info):
+        worker_calls.append(messages)
+        if any(isinstance(p, ToolReturnPart) for m in messages for p in m.parts):
+            findings = FINDINGS if len(worker_calls) > 2 else bad  # the retry prompt comes after the bad answer
+            return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, findings.model_dump())])
+        return ModelResponse(parts=[ToolCallPart(*WARFARIN_SECTION)])
+
+    r = run(scripted(PLAN)[0], FunctionModel(play), scripted(ONLY_GOOD)[0], scripted(supported(1))[0])
+    assert len(worker_calls) == 3  # tool call, bad findings, corrected findings
+    sent = str(worker_calls[2][-1].parts[0].content)
+    assert WARFARIN.chunk_id in sent and "words that are not there" in sent and "word for word" in sent
+    assert r.usage.by_role["worker"].requests == 3
+
+
+def test_a_worker_that_keeps_a_bad_quote_still_returns_and_stage_four_marks_the_claim():
+    bad = Findings(findings=[Finding(statement="x", chunk_id=WARFARIN.chunk_id, quote="not there at all")], not_found="")
+    calls = []
+
+    def play(messages, info):
+        calls.append(1)
+        if any(isinstance(p, ToolReturnPart) for m in messages for p in m.parts):
+            return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, bad.model_dump())])
+        return ModelResponse(parts=[ToolCallPart(*WARFARIN_SECTION)])
+
+    badclaim = Draft(
+        answer="Warfarin has contraindications [1].",
+        claims=[GOOD.model_copy(update={"citations": [Citation(chunk_id=WARFARIN.chunk_id, quote="not there at all")]})],
+    )
+    r = run(scripted(PLAN)[0], FunctionModel(play), scripted(badclaim, badclaim, "Nothing here.")[0], scripted(supported(1))[0])
+    assert len(calls) == 8  # two workers (planned, follow-up), each: tool call, first try, two output retries
+    assert [x.text for x in r.critic.removed] == [GOOD.text]
+
+
+def test_the_critic_sees_the_section_heading_path_of_each_cited_passage():
+    worker, _ = researcher(WARFARIN_SECTION)
+    critic, reviews = scripted(supported(1))
+    run(scripted(PLAN)[0], worker, scripted(ONLY_GOOD)[0], critic)
+    prompt = str(reviews[0][0].parts[-1].content)
+    assert WARFARIN.section_path != "(preamble)"
+    assert f"--- {WARFARIN.chunk_id} | section: {WARFARIN.section_path}\n" in prompt
+
+
 def test_an_out_of_scope_question_gets_a_refusal_and_calls_nobody_else():
     refuse = Plan(in_scope=False, reason="The question is about cooking.", sub_questions=[])
     worker, runs = researcher()
@@ -277,6 +325,24 @@ def test_a_failed_retry_round_ships_the_first_draft_with_the_flags_redacted(fail
     writer = scripted(BOTH, RuntimeError("model down"), redacted)[0] if failing == "writer" else scripted(BOTH, redacted)[0]
     r = run(scripted(PLAN)[0], FunctionModel(play) if failing == "worker" else healthy, writer, scripted(supported(2))[0])
     assert r.critic.review_rounds == 1 and [x.text for x in r.critic.removed] == [PLANTED.text]
+    assert "[1]" in r.answer and "moon dust" not in r.answer
+
+
+def test_a_critic_that_fails_in_round_two_ships_the_reviewed_first_draft_redacted():
+    worker, _ = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
+    writer, writes = scripted(BOTH, ONLY_GOOD, "Warfarin has contraindications [1].")
+    critic, reviews = scripted(supported(2), RuntimeError("model down"))
+    r = run(scripted(PLAN)[0], worker, writer, critic)
+    assert len(reviews) == 2 and r.critic.review_rounds == 1
+    assert [x.text for x in r.critic.removed] == [PLANTED.text]  # the first draft's verdicts, not the revision's
+    assert "[1]" in r.answer and "moon dust" not in r.answer
+
+
+def test_a_redaction_call_that_fails_still_answers_with_the_unsupported_sentence_removed():
+    worker, _ = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
+    writer, _ = scripted(BOTH, BOTH, RuntimeError("model down"))
+    r = run(scripted(PLAN)[0], worker, writer, scripted(supported(2))[0])
+    assert r.critic.marker_check == "repaired" and [x.text for x in r.critic.removed] == [PLANTED.text]
     assert "[1]" in r.answer and "moon dust" not in r.answer
 
 
