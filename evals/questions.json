@@ -1,5 +1,5 @@
 {
-  "status": "Draft. The owner has not yet confirmed the expected answers.",
+  "status": "Confirmed by the owner on 2026-11-13 (DEC-034).",
   "fields": {
     "origin": "public: one of the four questions published with the assignment, word for word (DEC-027). ours: added by this project (DEC-017).",
     "expect": "answer: a grounded answer. abstain: the answer says the corpus does not cover it. refuse: the question is out of scope.",
@@ -47,7 +47,7 @@
         "The apixaban label lists two contraindications: active pathological bleeding, and severe hypersensitivity reaction to the drug",
         "Hypersensitivity to the drug is a contraindication on both labels",
         "Bleeding is on both labels in different words: active pathological bleeding for apixaban, and bleeding tendencies and hemorrhagic tendencies for warfarin",
-        "Only the warfarin label lists pregnancy, recent or contemplated central nervous system or eye surgery, threatened abortion with eclampsia and preeclampsia, unsupervised non-compliant patients, spinal puncture, major regional or lumbar block anesthesia, malignant hypertension, and blood dyscrasias"
+        "Warfarin-only items include pregnancy, recent or contemplated central nervous system or eye surgery, threatened abortion, eclampsia and preeclampsia, unsupervised non-compliant patients, spinal puncture, major regional or lumbar block anesthesia, malignant hypertension, and blood dyscrasias"
       ],
       "must_not": ["Present the two labels' bleeding wordings as identical without saying that the wording differs"]
     },

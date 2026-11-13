@@ -210,3 +210,40 @@ DEC-012 already gives every well-formed question a 200, refusals included. An ou
   - When the redacted prose still carries a marker of a removed claim, code drops the sentence that carries it and reports `marker_check: repaired`.
   - A stage that fails gives HTTP 502 with the stage name. A failed index build gives 503, and the next question starts the build again.
   - The worker's typed output has no `sub_question` field. Code pairs each result with its sub-question.
+
+## 2026-11-13, third working session (readiness)
+
+The session started with checks on the pushed proof of concept: a clean clone, a secret scan, a re-read of the 33 saved answers, and a live trace of 15 answers. The owner then ruled on one sheet with the words "ok, go ahead", which accepts every recommendation on it.
+
+### DEC-032. The assistant's earlier choices stand
+
+- **Decision.** The owner accepts the choices that earlier entries left open to a veto.
+  - The six choices of DEC-031: the code-built end of `answer`, a file counting as a source only while a claim that cites it survives, citations limited to passages a tool returned in the request, the dropped sentence with `marker_check: repaired`, HTTP 502 for a failed stage and 503 for a failed index build, and code pairing each worker result with its sub-question.
+  - Python 3.15, `bm25s`, `httpx2` as a test-only dependency, and 503 from `/ask` on a config error.
+  - `docs/handoff.md` stays tracked and public (DEC-029).
+  - The built-in `artifact-diagramming` skill is listed in the manifest without a copy, because no license permits one.
+  - The disclaimer's wording as it is in `pipeline.py`.
+- **Reason.** The owner accepted the recommendation. The reason offered with it: each choice was checked on the running container, and none conflicts with an earlier ruling.
+
+### DEC-033. Quote check on whole words, and five more fixes
+
+- **Decision.** The quote check compares whole words and whole numbers in order, and ignores punctuation, Markdown marks, and letter case. It has no minimum length. This settles the open question on how strict the check is. Five more fixes go in with it: a worker gets a failing quote back inside its own call, the critic sees each passage's section heading, the writer's prompt rules out remarks on what a document lacks or how it is organized, a failed second review or a failed redaction call ships the draft in hand, and the token usage lines reach the container log.
+- **Rejected.** A minimum number of words per quote.
+- **Reason.** The owner accepted the recommendation. The reason offered with it, from the live trace: four of six failing quotes had every word right and failed on a final period or on the corpus's Markdown escapes, which removed both warfarin claims from one answer to P3. Real list items are two words long, so a minimum length would remove correct claims. The retry rounds whose cause was recorded came from these artifacts, not from a wrong medical statement.
+
+### DEC-034. Open items closed
+
+- **Decision.**
+  - The cleaned session transcript is not committed. An ignore rule keeps it out of the repo.
+  - The presentation overview stays a private page, with no copy in the repo.
+  - The expected answers of the eleven eval questions are confirmed, with one edit: the fourth key fact of P2 no longer reads as a complete list. A verifier agent found 33 of the 35 key facts stated in the gold lines, and the other two true but loosely worded.
+  - The property catalogue in `tests/PROPERTIES.md` is confirmed as listed. The follow-ups F01 to F16 are deferred: they are gaps in test strength, not product defects.
+  - The limits stay at six workers and ten tool calls (DEC-026). The most seen was eight calls by one worker. The time cap is set from a run after the fixes.
+  - A marker written as a range, and a redactor that renumbers markers, stay documented limits. No saved answer shows either.
+  - No reranker and no fifth tool (DEC-009, DEC-010). Nothing measured asks for one.
+- **Reason.** The owner accepted the recommendations.
+
+### DEC-035. Scope of the rest of this session
+
+- **Decision.** The fixes are verified with one run of the eleven questions, not two. The session then prepares the handoff for a design session later the same morning.
+- **Owner's words.** "one run and then set the stage for the design polish we'll do later in the morning (in another session). we don't have a lot of usage to spend so be careful not to go overboard on non-essential things."
