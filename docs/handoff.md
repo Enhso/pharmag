@@ -24,7 +24,9 @@ Checked on the container rebuilt from this tree:
 | Eight scripted behaviours at 1440 and 390 pixels wide | All pass, no horizontal overflow |
 | Esc during a run | The server cancels the run; the question stays in the field, selected |
 
-The working, failed, caution, and cancel states were checked through the real endpoint with a replayed pipeline, not with live model runs. Only Chrome on Linux was used.
+The working, failed, and cancel states were checked through the real endpoint with a replayed pipeline, not with live model runs. A caution was seen on a live run of P4. Only Chrome on Linux was used.
+
+A reviewer agent that saw only the brief and the screenshots returned eight fixes, and all eight are in. Its verdict on those eight was ship. It did not review the whole page again after the fixes.
 
 ## Read these first
 
@@ -36,6 +38,7 @@ The working, failed, caution, and cancel states were checked through the real en
 | `src/pharmag/models.py` | `AskResponse` and `TraceEvent`, the two shapes the page reads |
 | `PRODUCT.md` | Who the page is for and what it must show |
 | `.impeccable/surfaces/src-pharmag-static-index-html.md` | The page's brief and its direction: palette, type, states |
+| `DESIGN.md` | The page's design system as built: colours, type, layout, components, and what not to add. `.impeccable/design.json` holds the same tokens for tools |
 | `defense-brief.md` | Private and gitignored. Evidence E1 to E18. Add to it with every decision and measurement |
 | `ai-config/README.md` | Manifest of skills, MCP servers, agents, and plugins. Add a row when a session first uses one |
 

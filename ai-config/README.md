@@ -42,6 +42,8 @@ Five runs used the `builder` definition on 2026-11-11: the walking skeleton, the
 
 Three more runs used it on 2026-11-12, each in its own worktree: the agents, grounding checks, and pipeline; the API wiring, page, config overrides, and README; and three fixes that the first live runs called for. The planning session wrote the type contract in `src/pharmag/models.py` first, so the first two could run at the same time, then reviewed each diff, reran the tests, merged, and ran the live checks.
 
+One more run used the `builder` definition on 2026-11-13, in its own worktree: the streaming endpoint, its three new trace events, and their tests. The planning session read the diff, reran the tests, and merged. The same session wrote the page itself with the `impeccable` skill. Two agents that ship with the impeccable plugin then worked on it: `impeccable-finish-reviewer` reviewed the finished page from screenshots and returned eight fixes, and `impeccable-documenter` wrote `DESIGN.md` from the built page. A `verifier` run read the session's own trail for actions outside the brief. The plugin's agent definitions are not copied here.
+
 ## CLAUDE.md files
 
 | File | What it is |
