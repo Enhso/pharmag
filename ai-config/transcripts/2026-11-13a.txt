@@ -1,0 +1,1768 @@
+ ▐▛███▛█   Claude Code v2.1.323
+▝▜██████▀  Fable 5.2 · Claude Pro
+ ▝▝   ▝▝   ~/applications/sntx/work-test/pharmag
+
+
+❯ let's get back to work. this needs to be sent by the end of the day and i've  
+  got two main sessions allocated for this. the first (this one) will be        
+  focused on ironing out what the system still needs before being deployed      
+  (decisions left open, bugs to fix, decisions made by claude to confirm,       
+  etc.). let's go!                                                              
+
+  Read 3 files (ctrl+o to expand)
+
+● Bash(git status --short && git log --oneline -15 && ls)
+  ⎿  ?? ai-config/transcripts/
+     b96f66b Record the cleaned transcript in the handoff
+     4cd0c6c Record the review fixes and the second container run
+     … +26 lines (ctrl+o to expand)
+
+● Bash(date -u +"UTC %F %T" && TZ=Africa/Casablanca date +"Casablanca %F %T %Z
+      (%z)" && git fetch -q origin && git status -sb | head -3 && wc -l
+      docs/*.md tests/PROPER…)
+  ⎿  UTC 2026-11-13 06:31:24
+     Casablanca 2026-11-13 06:31:24 +00 (+0000)
+     ## main...origin/main
+     … +33 lines (ctrl+o to expand)
+
+● Bash(uv run --locked pytest -q 2>&1 | tail -5)
+  ⎿  ......................................................................
+     .. [ 64%]
+     ........................................
+     … +2 lines (ctrl+o to expand)
+
+● Bash(date +"local %F %T %Z (%z)"; zdump -v Africa/Casablanca 2>/dev/null |
+      grep -E " 202[67] " | head -8; ls -l /etc/localtime; dpkg -s tzdata
+      2>/dev/null | grep -i…)
+  ⎿  local 2026-11-13 06:31:55 +00 (+0000)
+     Africa/Casablanca  Sun Feb 15 01:59:59 2026 UT = Sun Feb 15 02:59:59 2
+     026 +01 isdst=0 gmtoff=3600
+     … +13 lines (ctrl+o to expand)
+
+  Read 8 files (ctrl+o to expand)
+
+● The handoff, decision log, scoping doc, property review and pipeline code are
+  read, and all 112 tests pass. Next I'm checking which of yesterday's run
+  evidence is still on disk, before putting the open rulings in front of you. 
+  · summary
+
+● Bash(ls -la evals/ evals/results 2>/dev/null; echo ---; ls -d /tmp/claude-1000
+      /~-applications-sntx-work-test-pharmag/*/scratchpad 2>/dev/null
+      | while read…)
+  ⎿  evals/:
+     total 160
+     drwxrwxr-x  5 the owner the owner   4096 Nov 12 06:03 .
+     … +65 lines (ctrl+o to expand)
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d8
+      73-c136-46a8-a806-39a3d74fb507/scratchpad; ls -la $S/live1 $S/live2
+      $S/live3 $S/live4 |…)
+  ⎿  /tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+     873-c136-46a8-a806-39a3d74fb507/scratchpad/live1:
+     total 20
+     … +307 lines (ctrl+o to expand)
+
+  Made 1 scratchpad edit +72 (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d8
+      73-c136-46a8-a806-39a3d74fb507/scratchpad; python3
+      /tmp/claude-1000/~-applica…)
+  ⎿  == bracketed text in prose that the marker regex does not read as a ma
+     rker
+        (0 found)
+     … +41 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import collections, pathlib, unicodedata…)
+  ⎿  == medlineplus-warfarin.md L7-19: 2650 chars; non-ASCII: {}
+     Warfarin may cause serious bleeding that can lead to death. Tell your
+     doctor if you have or have ever had a condition that causes you to ble
+     … +62 lines (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d8
+      73-c136-46a8-a806-39a3d74fb507/scratchpad; cat $S/debug_draft.py; echo;
+      echo "--- medli…)
+  ⎿  """Run one question through the pipeline and print each draft the writ
+     er returns."""
+     import asyncio, json, os, sys
+     … +35 lines (ctrl+o to expand)
+
+● Yesterday's 33 saved answers show all 10 removed claims were cut by the quote
+  check, with P3 and C3 losing one in every run. I'm running those two live now
+  to see the failing quotes. · summary
+
+  Made 1 scratchpad edit +94 (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad && uv run --locked --env-file
+      .env python $S…)
+  ⎿  Running in the background (↓ to manage)
+
+  Listed 1 directory (ctrl+o to expand)
+  ⎿  Found 2 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import subprocess, urllib.parse, pathlib…)
+  ⎿  OPENAI_API_KEY               len= [redacted: proxy detail]  tracked files with it: 0  commit
+     s that add/remove it: 0  in untracked transcript: 0
+     key body (chars [redacted: proxy detail])  len= [redacted: proxy detail]  tracked files with it: 0  commit
+     … +9 lines (ctrl+o to expand)
+
+  Made 1 scratchpad edit +47 (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; mkdir -p $SP/clean && bash
+      $SP/clean_clone_…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d8
+      73-c136-46a8-a806-39a3d74fb507/scratchpad; python3 - $S/live2 $S/live3
+      $S/live4 <<'EOF'…)
+  ⎿  tool use over 33 answers: {'get_section': 76, 'search_corpus': 87, 'fi
+     nd_interactions': 7}
+     tool calls per worker: max 8  distribution [(1, 15), (2, 25), (3, 6),
+     … +22 lines (ctrl+o to expand)
+
+● Two background checks are running (a quote-failure trace on P3, C3 and P1, and
+  a clean clone-and-build of the public repo), and I'm reading the tools code
+  since all three saved P3 answers miss the warfarin row that names sertraline. 
+  · summary
+  Read 1 file (ctrl+o to expand)
+
+● verifier(Verify eval key facts) Sonnet 5.5
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; cat $SP/quote_failures.log
+      2>/dev/null | ta…)
+  ⎿                   goes away once observability is on — or PYDANTIC_AI_N
+     O_BANNER=1
+     P3 38.4 s rounds 2 removed 2
+     … +14 lines (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; head -12
+      $SP/quote_failures.log | cut -c1-3…)
+  ⎿                   pydantic-ai v2.67.0 • Python 3.15.2
+
+           / \        agent: agent • model: openai:[redacted: chat model] • output:
+     … +14 lines (ctrl+o to expand)
+
+● Background command "Clone the public repo without credentials, build and run
+the image on port 8001, and ask one question" completed (exit code 0)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; sed -n '11,60p'
+      $SP/clean/check.log | cut -…)
+  ⎿  status 200 in 29.082594 s
+     sources: ['dailymed-metformin.md'] | rounds: 1 | disclaimer in answer:
+      True
+     … +16 lines (ctrl+o to expand)
+
+● Bash(ls ~/.womm-skills/golden-specs/ 2>/dev/null | head -30; cd
+      ~/applications/sntx/work-test/pharmag &&
+      V=.venv/lib/python3.15/site-packages && grep -n "t…)
+  ⎿  LLM_JSON_ENVELOPE_TOLERANCE.md
+     PYDANTIC_V2_ABSTRACT_BASES_AND_CROSS_MODULE_FORWARDS.md
+     PYTHON_MODULE_LEVEL_IMPORT_PATCHING.md
+     … +7 lines (ctrl+o to expand)
+
+● Background command "Run P3, C3 and P1 live in-process and record every quote
+that fails the check" completed (exit code 0)
+
+● The live trace is back. Reading the failing quotes now.
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; tail -3
+      $SP/quote_failures.log; python3 - $…)
+  ⎿  cache hit rate for worker fell from 0.42 to 0.00
+     P1 45.6 s rounds 2 removed 0
+     13 failing quotes recorded
+     … +111 lines (ctrl+o to expand)
+
+  Made 1 scratchpad edit +63 (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad && PYDANTIC_AI_NO_BANNER=1 uv
+      run --locked -…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(grep -n "blood thinners" corpus/medlineplus-ibuprofen.md | cut -c1-260;
+      echo ---; grep -n "prothrombin test" corpus/medlineplus-warfarin.md | cut
+      -c1-200; echo…)
+  ⎿  11:NSAIDs such as ibuprofen may cause ulcers, bleeding, or holes in th
+     e esophagus (tube between the mouth and stomach), stomach, or intestin
+     e. These problems may develop at any time during treatment, may happen
+     … +46 lines (ctrl+o to expand)
+
+› Message from verifier
+  Verdict: PASS with caveats. 33 of 35 key facts are OK, 2 are PARTLY (P2 fact
+  4, C1 fact 1) and none are NOT IN GOLD. Both caveats are only about wording. I
+  read the gold lines of every question except C7, and I changed no file.
+
+  Reading I took: "OK" means the gold lines state the fact, or the fact follows
+  from them by a plain inference, which I label. Line numbers are 1-based and
+  checked by hand. The corpus is in
+  ~/applications/sntx/work-test/pharmag/corpus.
+
+  P1 (dailymed-warfarin.md 127-146)
+  - Pregnancy except mechanical heart valves at high thromboembolism risk: OK,
+  131 and 133.
+  - Hemorrhagic tendencies or blood dyscrasias: OK, 137.
+  - CNS or eye surgery, or traumatic surgery with large open surfaces: OK, 138.
+  - Bleeding tendencies (ulceration/overt bleeding of GI/GU/respiratory tract,
+  CNS hemorrhage, aneurysms/dissecting aorta, pericarditis/effusions,
+  endocarditis): OK, 139. It is one bullet with five sub-conditions.
+  - Threatened abortion, eclampsia, preeclampsia: OK, 140.
+  - Unsupervised patients with a potential high level of non-compliance: OK,
+  141.
+  - Spinal puncture and other procedures with potential for uncontrollable
+  bleeding: OK, 142.
+  - Hypersensitivity to warfarin or any other component: OK, 143. The label adds
+  "(e.g., anaphylaxis)".
+  - Major regional or lumbar block anesthesia: OK, 144.
+  - Malignant hypertension: OK, 145.
+  Missing from key_facts: nothing from the contraindications list. All 10 label
+  bullets (pregnancy plus 9) map to the 10 key facts, in a different order. Only
+  the reason for the pregnancy contraindication is left out (133: "major
+  congenital malformations", "fatal fetal hemorrhage", "increased risk of
+  spontaneous abortion").
+  Gold ranges: 127 is the "## 4 CONTRAINDICATIONS" heading and 146 is the blank
+  line before the section 5 heading at 147. Good.
+
+  P2 (warfarin 127-146; apixaban 108-114)
+  - Apixaban lists two contraindications: OK, 112 "Active pathological bleeding"
+  and 113 "Severe hypersensitivity reaction".
+  - Hypersensitivity is on both labels: OK, apixaban 113 and warfarin 143. The
+  qualifiers differ ("Severe", "anaphylactic reactions" versus "to any other
+  components").
+  - Bleeding is on both labels in different words: OK, apixaban 112 and warfarin
+  137 and 139.
+  - "Only the warfarin label lists ...": PARTLY. The list leaves out other
+  warfarin-only items in the same section: cerebral aneurysms/dissecting aorta,
+  pericarditis/pericardial effusions, bacterial endocarditis, CNS hemorrhage,
+  and traumatic surgery with large open surfaces (138-139). Line 139 also lists
+  active ulceration/overt bleeding. Because the fact says "Only ... lists", the
+  list reads as complete when it is not. Also, "threatened abortion with
+  eclampsia and preeclampsia" merges three items that line 140 lists separately.
+  Missing from key_facts: the omitted warfarin-only items above, and the
+  pregnancy exception for mechanical heart valves (131).
+  Gold ranges: apixaban 108 is the heading, 114 is blank, and 115 is the section
+  5 heading. Good.
+
+  P3 (warfarin 251-260 and 91-96; sertraline 102-107 and 322-359)
+  - Warfarin label lists sertraline among serotonin reuptake inhibitors that
+  increase bleeding risk: OK, warfarin 259, under 253.
+  - Warfarin label says to closely monitor patients on such a drug: OK, 253
+  "closely monitor patients receiving any such drug".
+  - Sertraline label: drugs that interfere with serotonin reuptake increase
+  bleeding, and warfarin may add to this: OK, 104.
+  - Sertraline label: carefully monitor the INR for patients taking warfarin:
+  OK, 106 and 341.
+  Missing from key_facts: warfarin 2.4 INR schedule (93: daily until stable,
+  then generally every 1 to 4 weeks). Sertraline 106 and 341 also say to inform
+  patients of the bleeding risk. Sertraline 104 names GI bleeding and
+  aspirin/NSAIDs.
+  Gold ranges: warfarin 91-96 runs from the 2.4 heading to the blank before the
+  2.5 heading (97), and 251-260 is the full 7.3 block. Sertraline 102-107 is
+  good. Sertraline 322-359 is wide. The relevant part is 339-342, and 343-346
+  (warfarin protein binding) and 347-358 are unrelated to bleeding. The
+  retrieval metric only needs an overlap, so this is tolerable.
+
+  P4 (metformin 44-51, 32-39, 210-213)
+  - Contraindicated in severe renal impairment, eGFR below 30 mL/min/1.73 m2:
+  OK, 48, 35, 212 (and 38).
+  - eGFR 25 is below 30, so contraindicated: OK by inference. The label never
+  mentions 25, so the model has to make the comparison.
+  - Label unit is mL/min/1.73 m2 while the question gives mL/min: OK for the
+  label unit (35, 48, 212). The contrast with the question is not in the corpus,
+  because the question comes from the assignment.
+  Missing from key_facts: 36 (initiation not recommended at eGFR 30-45), 37
+  (reassess benefit-risk if eGFR falls below 45), 38 (discontinue if eGFR falls
+  below 30). Also the other two contraindications at 49-50 (hypersensitivity;
+  metabolic acidosis).
+  Gold ranges: 44-51 runs from heading to last item (52 is the section 5
+  heading). 32-39 runs from heading to last bullet, and 210-213 from heading to
+  blank. Good.
+
+  C1
+  - Corpus has no rivaroxaban label or monograph: PARTLY. The corpus does
+  contain the word, in the glossary only, so "has no label or monograph" is true
+  but "no rivaroxaban" is not. I grepped case-insensitively; "Xarelto" appears
+  nowhere.
+  - Glossary names it as an example of a DOAC: OK, GLOSSARY.md:37 "DOAC: direct
+  oral anticoagulant. Apixaban, rivaroxaban. Alternative to warfarin."
+  Search result: in corpus/, "rivaroxaban" appears only in GLOSSARY.md line 37.
+  Outside corpus/ it also appears in docs/scoping.md, tests/test_tools.py,
+  evals/questions.json and ai-config/transcripts/2026-11-11a.txt.
+  Missing from key_facts: nothing. Gold is empty, as expected. C7: nothing to
+  check.
+
+  C2 (acetaminophen 17-29 and 31-37)
+  - More than 4,000 mg in 24 hours may cause severe liver damage: OK, 33 and 35.
+  - Adult directions are 2 tablets every 6 hours, no more than 6 tablets in 24
+  hours unless directed by a doctor: OK, 23 and 25 (adults and children 12 and
+  over, 21).
+  - Liver risk rises with other acetaminophen-containing drugs and 3 or more
+  alcoholic drinks daily: OK, 36-37.
+  Caveat for the owner: the label has no sentence called a "maximum daily dose".
+  The 4,000 mg figure is a liver-damage threshold ("more than"). No tablet
+  strength appears in the file, so the 6 tablets cannot be converted to mg.
+  Missing from key_facts: 27 (do not use for more than 10 days unless directed),
+  29 (children under 12: ask a doctor), and the overdose warning at 69 (outside
+  gold).
+  Gold ranges: 17 is the "## Directions" heading and 37 is the last bullet.
+  Good.
+
+  C3 (warfarin 251-260; ibuprofen 194-196)
+  - Warfarin label lists ibuprofen among NSAIDs that increase bleeding risk, and
+  says to monitor closely: OK, warfarin 258 and 253.
+  - Ibuprofen label: bleeding reported with coumarin-type anticoagulants,
+  physician should be cautious: OK, 196.
+  - Ibuprofen label: effects of warfarin and NSAIDs on GI bleeding are
+  synergistic: OK, 196 ("synergistic").
+  Missing from key_facts: ibuprofen 196 also says short-term studies showed no
+  significant effect on prothrombin times, and that users of both drugs have
+  "serious GI bleeding" risk higher than either alone.
+  Gold ranges: 194 is the sub-heading and 196 is the paragraph. Good.
+
+  C4 (sertraline 54-56 and 62-68)
+  - Contraindicated with an MAOI or within 14 days of stopping one: OK, 66.
+  - At least 14 days from stopping an MAOI to starting sertraline: OK, 56.
+  - At least 14 days after stopping sertraline before starting an MAOI: OK, 56.
+  - Reason is increased risk of serotonin syndrome: OK, 66. It is also at 329.
+  Missing from key_facts: 66 names linezolid and IV methylene blue as MAOIs.
+  67-68 list pimozide and hypersensitivity as other contraindications. Examples
+  are at 331.
+  Gold ranges: 54-56 is the 2.5 heading and its text. 62-68 runs from the
+  section 4 heading to the last item. Good.
+
+  C5 (aspirin 27-29; medlineplus-aspirin 41)
+  - Aspirin may cause Reye's syndrome, rare but serious, in children and
+  teenagers: OK. DailyMed 29 says "a rare but serious illness", and MedlinePlus
+  41 says it "may cause Reye's syndrome". The wording is split across the two
+  files.
+  - Children and teenagers with or recovering from chicken pox or flu-like
+  symptoms should not use the product: OK, DailyMed 29.
+  Missing from key_facts: MedlinePlus 41 describes Reye's as a condition where
+  fat builds up on the brain, liver and other organs, and says to ask a doctor
+  first. DailyMed 29 says to consult a doctor if there are behaviour changes
+  with nausea and vomiting.
+  Gold ranges: 27 is the heading, 29 the paragraph, and 41 is a single line.
+  Good.
+
+  C6 (warfarin 105-107)
+  - Some dental or surgical procedures may necessitate interruption or a dose
+  change: OK, 107.
+  - Consider benefits and risks of discontinuing even briefly: OK, 107.
+  - Determine the INR immediately before any dental or surgical procedure: OK,
+  107.
+  Missing from key_facts: for minimally invasive procedures, 107 says adjusting
+  the dose to keep the INR at the low end of the range "may safely allow for
+  continued anticoagulation".
+  Gold ranges: 105 is the heading and 107 the paragraph. Good.
+  must_not note: "Omit the statement that this is not medical advice" cannot
+  come from the corpus, so it is a rule about the agent's own wording.
+
+  C7: nothing to check.
+
+  P2 allowed_sources check (report only)
+  - medlineplus-apixaban.md, who should not take it:
+    - Line 49: "tell your doctor if you have an artificial heart valve or if you
+  have heavy bleeding that cannot be stopped. Your doctor will probably tell
+  you not to take apixaban."
+    - Lines 45, 50, 51: allergy, bleeding problems, pregnancy.
+    - Line 9: spinal/epidural blood-clot paralysis warning.
+    - Lines 81, 65-68: bleeding precautions and symptoms.
+    - It does not use the word "contraindicated". It lists allergy at 45 as
+  something to tell the doctor, not as a ban.
+  - medlineplus-warfarin.md:
+    - Line 7: serious bleeding warning and the conditions to report.
+    - Line 48: allergy, tell the doctor.
+    - Line 53: pregnancy, "Warfarin may harm the fetus".
+    - Line 55: "Your doctor may tell you to stop taking warfarin before the
+  surgery or procedure".
+    - Lines 11, 113, 117-118: bleeding precautions and symptoms.
+    - It also frames these as "tell your doctor" items, not contraindications.
+
+  Summary
+  - Key facts OK: 33. PARTLY: 2 (P2 fact 4, C1 fact 1). NOT IN GOLD: 0.
+  - Gold ranges: all start and end at sensible places. P3 sertraline 322-359 is
+  wider than needed.
+  - Look at by hand: P2 (the "Only ..." list is incomplete), C1 (the wording of
+  fact 1), C2 (no explicit "maximum dose" sentence in the label), P4 (fact 2 is
+  an inference).
+
+  **Snags**
+  - The Bash tool limits output, so I printed long lines with `cut` and had to
+  compute line numbers from an offset in my first pass. `awk` with `NR` was
+  cleaner.
+  - Some corpus lines are very long (warfarin 93, ibuprofen 196). I cut them, so
+  quotes beyond about 700 characters were not read in full.
+
+  **Wants**
+  - A grep-with-line-number reader that wraps long lines without truncating.
+
+● Agent "Verify eval key facts" finished · 1m 15s
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● The key-fact check came back at 33 of 35 confirmed, and the quote trace found
+  that today's P3 run dropped dailymed-warfarin.md because a verbatim quote
+  ended early. I'm running one more trace on the retry rounds and checking the
+  last unexplained failing quote. · summary
+
+● Bash(python3 - <<'EOF'
+      import pathlib, re, unicodedata…)
+  ⎿  "Tell your doctor if you take any of the following medications: antico
+     agulants ('blood thinners'); aspirin; other NSAIDs such as naproxen (A
+     leve, Naprosyn); oral steroids such as dexamethasone, methylprednisolo
+     … +11 lines (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; cat $SP/retry_triggers.log |
+      tail -9; ls -l…)
+  ⎿  Error: Exit code 2
+     P4 16.0 s rounds 1
+     cache hit rate for writer fell from 0.31 to 0.00
+     C2 24.7 s rounds 1
+     P2 59.2 s rounds 2
+     C4 23.1 s rounds 1
+     P1 66.5 s rounds 2
+     C5 13.5 s rounds 1
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; cat > $SP/probes.json <<'EOF'
+      {"questions":…)
+  ⎿  17:questions = {q["id"]: q["question"] for q in json.loads(Path(os.env
+     iron.get("QUESTIONS_JSON", "evals/questions.json")
+     P1 66.5 s rounds 2
+     C5 13.5 s rounds 1
+
+● Waiting on the last question of the retry trace (C6). Meanwhile measuring how
+  many passages only make sense with their heading, since the critic is shown
+  passage text without it.
+
+● Bash(uv run --locked python - <<'EOF' 2>/dev/null
+      from pathlib import Path…)
+  ⎿  chunks: 451; start with a list item (lead-in is the heading or an earl
+     ier chunk): 70
+       by source: {'glossary': 5, 'dailymed': 11, 'medlineplus': 54}
+     … +18 lines (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; date -u +%T; ls -la
+      --time-style=+%T $SP/re…)
+  ⎿  06:41:56
+     06:41:52 /tmp/claude-1000/~-applications-sntx-work-test-phar
+     mag/932ff93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad/retry_triggers.jso
+     … +3 lines (ctrl+o to expand)
+
+● Background command "Run seven eval questions live in-process and record what
+each review round flagged" completed (exit code 0)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad &&
+      QUESTIONS_JSON=$SP/probes.json PYDANTIC_A…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; python3 -
+      $SP/retry_triggers.json <<'EOF'
+      i…)  ⎿  == P4 review 1 of 1 at 16.0 s (total 16.0 s) | claims 1 | removed at e
+     nd 0 | cautions 1 | sources ['dailymed-metformin.md']
+        [1] AMBIGUOUS: claim: The label defines severe renal impairment, a
+     … +58 lines (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; date -u +%T; tail -6
+      $SP/probes.log; docker…)
+  ⎿  06:43:08
+     G1 16.6 s rounds 1
+     G2 22.1 s rounds 2
+     … +5 lines (ctrl+o to expand)
+
+● Background command "Run five probe questions with shapes the eval set lacks,
+live in-process" completed (exit code 0)
+
+● Probes are done; reading them, then I'll put the rulings in front of you.
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; python3 - $SP/probes_out.json
+      <<'EOF'
+      impor…)
+  ⎿  == G1: 16.6 s, rounds 1, removed 0, cautions 0, marker_check passed, s
+     ources ['GLOSSARY.md', 'medlineplus-sertraline.md']
+        ANSWER: - An SSRI is a selective serotonin reuptake inhibitor [1].
+     … +48 lines (ctrl+o to expand)
+
+● Update(defense-brief.md)
+  ⎿  Added 16 lines
+      122  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      123  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      124  
+      125 +[redacted: private notes]
+          +[redacted: private notes]
+      126 +                                                              
+      127 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      128 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      129 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      130 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      131 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      132 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      133 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      134 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      135 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      136 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      137 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      138 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      139 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      140 +                                                              
+      141  [redacted: private notes]
+      142  
+      143  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+
+● Update(defense-brief.md)
+  ⎿  Added 1 line, removed 1 line
+      195  [redacted: private notes]
+      196  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      197  [redacted: private notes]
+           [redacted: private notes]
+      198 -[redacted: private notes]
+          -[redacted: private notes]
+      198 +[redacted: private notes]
+          +[redacted: private notes]
+      199  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      200  
+      201  [redacted: private notes]
+
+● Update(defense-brief.md)
+  ⎿  Added 1 line, removed 1 line
+      130  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      131  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      132  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      133 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+      133 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      134  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      135  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      136  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+
+● The fallback on main is sound: clean clone, build, run and one live question
+  all pass. The checks also found that the retry round fires on artifacts of our
+  own checks, and that this cost P3 one of its two expected source files in
+  today's run. Nothing in the repo has changed yet; the fixes below wait for
+  your go.
+
+  Verified this morning
+
+  - Clean clone: an unauthenticated clone of the public repo gives b96f66b with
+    no private files. The image builds (395 MB), /health is ready in 7 s, and P4
+    answers 200 in 29 s with the right source and the disclaimer.
+  - Tests: 112 pass.
+  - Secrets: the key and the proxy host are in no tracked file, no commit, and
+    not in the cleaned transcript.
+  - Deadline: this machine's time zone data puts Casablanca on UTC+0 today, so
+    the deadline is 23:59 on your clock (23:59 UTC, not the 22:59 the handoff
+    guessed).
+  - [redacted: private notes]
+    lines. 33 are confirmed and only one needs an edit (see O3).
+  - Unseen question shapes: five probes all answered with plausible sources
+    (glossary term, older label format, consumer question, a new interaction
+    pair, a dose limit).
+
+  Defects found, with the fix I propose
+
+  I traced 15 live answers; 7 took the retry round. The critic's flags were
+  recorded for four of those, and none was an unsupported medical statement.
+
+  - F1. The quote check is too literal, and too loose (this is also your V8 
+    ruling).
+    - Too literal: of six distinct failing quotes, four had every word right.
+      Three ended with a period where the label's sentence continues, and one
+      met the corpus's \[ escapes. That removed both warfarin claims from P3
+      today.
+    - Too loose: "5 mg" passes inside "0.5 mg".
+    - Fix: compare whole words and whole numbers in order, ignoring punctuation,
+      Markdown marks and case. A prototype accepts those four, still rejects
+      the paraphrase and the stitched heading quote, and still accepts all 166
+      quotes accepted yesterday.
+    - No minimum length: real list items are two words ("Malignant
+      hypertension").
+  - F2. A worker's failing quote goes back to that worker inside its own call,
+    the way the writer's marker check already works. A bad quote then costs one
+    model call, not a retry round and a lost claim.
+  - F3. The critic sees each passage's section heading, as the worker already
+    does. On the metformin probe the critic said the passage "does not specify
+    adults" although its section is "2.1 Adult Dosage", and the final answer
+    repeated that. 70 of 451 passages start with a list item whose lead-in is
+    the heading.
+  - F4. Writer prompt: no claims about what a document lacks or how it is 
+    organised. Remarks such as "the MedlinePlus monograph does not provide a
+    formal contraindications list" started the retry on P1, P2 and the albuterol
+    probe. The same habit is why P2 cites medlineplus-apixaban.md.
+  - F5. A failed second review or a failed redaction call currently gives 502 
+    and throws away a complete draft. Fix: ship the draft in hand and let code
+    remove the flagged sentences. I read this from the code; the builder proves
+    it with a failing test first.
+  - F6. Token usage lines never reach the container log (0 lines after 20+
+    questions). Fix: one logging setup line.
+
+  Rulings I need
+
+  Reply "ok" to accept every recommendation, or name the ones you overrule.
+
+  Assistant choices to confirm (I recommend accepting all):
+
+  - A1. The six DEC-031 choices:
+    - answer ends with code-built cautions, a numbered source list and the
+      disclaimer.
+    - A file counts as a source only if a claim citing it survives.
+    - A citation must point to a passage a tool returned in that request.
+    - A sentence with a dangling marker is dropped and reported as marker_check:
+      repaired.
+    - A failed stage gives 502 and a failed index build gives 503.
+    - Code pairs each worker result with its sub-question.
+  - A2. Python 3.15, bm25s, httpx2 (tests only), and 503 from /ask on a config
+    error.
+  - A3. docs/handoff.md stays tracked and public. The second session rewrites it
+    as a state-at-submission note.
+  - A4. The built-in artifact-diagramming skill is listed in the manifest
+    without a copy, because it has no license that permits one.
+  - A5. Disclaimer wording: "This is general information from a small set of
+    documents, not medical advice. Ask a doctor or pharmacist about your own
+    treatment."
+
+  Open rulings:
+
+  - O1. Cleaned transcript: do not commit. The brief does not ask for
+    transcripts, and a leak in 2,757 lines cannot be taken back once pushed.
+  - O2. Presentation overview: keep it private, with no copy in the repo.
+  - O3. Expected answers: confirm the 11 as they stand, with one edit. P2's
+    fourth key fact says "Only the warfarin label lists …" and omits five
+    warfarin-only items; I would reword it to "Warfarin-only items include …".
+  - O4. Properties: confirm tests/PROPERTIES.md as listed and defer all of F01 
+    to F16. They are test-strength gaps, not product defects.
+  - O5. Limits: keep six workers and ten tool calls. The most seen was 8 calls
+    by one worker. I will bring the time cap to you with numbers after the
+    fixes, since they change the latency (today one round takes a median 21 s,
+    two rounds 61 s, worst 99 s).
+  - O6. V13 and V14 stay open as documented limits. No answer in the 33 saved
+    runs used a marker form other than [n].
+  - O7. No reranker and no fifth tool. Nothing measured asks for either.
+    lookup_glossary was never called in yesterday's 33 answers.
+
+  On your go
+
+  One builder does F1 to F6 test-first in a worktree. I verify, rebuild the
+  container, rerun the 11 questions twice, and compare removed claims, retry
+  rate, sources and latency with yesterday. Then you get the time-cap ruling,
+  and I rewrite the handoff for the second session.
+
+  Your rulings are the only thing I'm waiting on; a reply by about 07:30 keeps
+  the fixes inside this session.
+
+  Not checked: an arm64 build, and why C5 cited only medlineplus-aspirin.md
+  today against both aspirin files yesterday. Today's numbers are one run per
+  question. Last night's pharmag-poc container is still up on port 8000, and I
+  left an agent-clean image from the clone check.
+  ⎿  Stop says: ⏱ 1m 29s (finished 07:44:38)
+
+✻ Crunched for 13m 36s · done 6:44
+
+❯ ok, go ahead. one run and then set the stage for the design polish we'll do   
+  later in the morning (in another session). we don't have a lot of usage to    
+  spend so be careful not to go overboard on non-essential things.              
+
+● builder(Build fixes F1 to F6) Sonnet 5.5
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The builder is working on the six fixes in its own worktree. Meanwhile I'm
+  logging your rulings and applying the two small ones that need no code (the
+  eval file and the transcript ignore rule).
+
+● Bash(cat >> docs/decisions.md <<'EOF'…)
+  ⎿  questions.json updated and still valid JSON
+      M .gitignore
+      M docs/decisions.md
+     … +2 lines (ctrl+o to expand)
+
+● Bash(git add .gitignore docs/decisions.md evals/questions.json && python3 -
+      <<'EOF'
+      import subprocess, urllib.parse, pathlib…)
+  ⎿  staged diff lines: 76 | secret hits: none
+     2a147cf Log the owner's rulings of the third session, confirm the expe
+     cted answers, and keep the session transcript out of the repo.
+     ## main...origin/main
+
+● Your rulings are logged as DEC-032 to DEC-035 and pushed (2a147cf), together
+  with the confirmed eval file and an ignore rule that keeps the transcript out
+  of the repo. The 112 tests still pass.
+
+  A builder agent is now implementing the six fixes test-first in its own
+  worktree. When it reports back I will read the diff, merge, rebuild the
+  container, run the eleven questions once against it, and then write the
+  handoff for the design session.
+  ⎿  Stop says: ⏱ 3m 45s (finished 07:53:26)
+
+✻ Cooked for 3m 45s · done 6:53
+
+› Message from fixes
+  All six fixes are done and committed. `uv run --locked pytest -q` ends at 120
+  passed (112 before).
+
+  **Branch:** `worktree-agent-afa826136998d5d9e`. Not pushed, not merged. One
+  commit per fix, each with the Claude-Session trailer:
+  - f61faa0  F1, the quote check compares whole words and numbers (plus the
+  stage 4, 5, 6 and 7 changes in `docs/architecture.md`)
+  - c13556b  F2, a worker's failing quote goes back to the worker
+  - a7f4502  F3, the critic sees each cited passage's section heading
+  - d3b3999  F4, the writer prompt
+  - 0e1b644  F5, a failed second review or a failed redaction no longer loses
+  the draft
+  - 0824437  F6, a handler on the `pharmag` logger
+
+  **How I confirmed each test fails without its fix.** For each fix I reverted
+  only the source change and reran:
+  - F1: the old `quote_occurs` makes the property test, the real-corpus test and
+  the small-examples test fail (3 failed).
+  - F2: with the validator commented out, both new worker tests fail.
+  - F3: `test_the_critic_sees_the_section_heading_path_of_each_cited_passage`
+  fails on the old `_check`.
+  - F5: both new tests failed on the old code with `PipelineError: review: …`
+  and `PipelineError: redact: …`, before I wrote the fix.
+  - F6: `test_importing_the_api_enables_the_pipelines_usage_lines_without_touchi
+  ng_the_root_logger` fails without the handler.
+  - F4 has no test, as agreed.
+
+  **New or changed properties in `tests/PROPERTIES.md` (please confirm each):**
+  - 25 (restated). Any run of whole tokens of a passage (words, numbers with
+  their separators, comparison signs) passes the quote check. This also holds
+  after reflowing whitespace, changing case, and adding punctuation between
+  tokens or at either end. A span that starts or ends inside a word is not
+  covered. The test is `test_any_run_of_whole_tokens_passes_after_reflow_case_ch
+  ange_and_punctuation`, and its generator now draws token runs.
+  - 59 (new). On the real corpus chunks, the four quotes that failed only on
+  punctuation now pass. The stitched heading-plus-list-item quote and the
+  paraphrase still fail.
+  - 60 (new). "5 mg" is not in "0.5 mg", "< 30" is not in "≥ 30", "the" is not
+  in "other", and a list item matches through its bullet.
+  - 61 (new). A worker finding whose quote is not in its cited passage goes back
+  to that worker inside the same call, naming the chunk ID and the start of the
+  quote.
+  - 62 (new). A worker that keeps a bad quote through every allowed retry still
+  returns its findings, and stage 4 removes the claim that cites them.
+  - 63 (new). The critic's prompt shows each cited passage with its section
+  heading path.
+  - 64 (new). If the second review fails, the first draft ships with the
+  verdicts it was reviewed with, and its unsupported claims are redacted.
+  - 65 (new). If the redaction call fails, the request still answers. Stage 8
+  removes the unsupported sentences and reports `repaired`.
+  - 66 (new). After `pharmag.api` is imported, the `pharmag.pipeline` logger is
+  enabled for INFO and the `openai` logger is not.
+
+  **Differences from the brief:**
+  - F2: no existing test needed its script or counts adjusted. The `researcher`
+  helper already returns a good quote, and the stubborn-quote cases are in the
+  claims, not the worker. I added two worker tests instead: one retry that
+  succeeds, and one where the quote stays bad for every allowed try and the
+  claim is removed at stage 4.
+  - F2: the retry message names up to three failing findings as `chunk_id:
+  'first 80 characters of the quote'`. A finding whose chunk is not in the
+  evidence also counts as failing.
+  - F5: `pairs += …` in the retry round still mutates `pairs` before the second
+  review. That is harmless because `pairs` is not read after the loop.
+  - Docs: I changed the `docs/architecture.md` stage 4, 5, 6 and 7 text in the
+  F1 commit, so stage 6 and 7 describe behaviour that only lands two commits
+  later. The branch is consistent at its tip.
+  - F6: the test asserts that the `pharmag.pipeline` logger is enabled for INFO
+  and that the `openai` logger is not. The second check stands in for "the root
+  logger is untouched".
+
+  **Not checked:**
+  - F4 has not been run live; that is the lead's check.
+  - Unicode case folding of upper-cased quotes is only exercised on the English
+  corpus.
+
+  **Snags:** none.
+
+  **Wants:** none.
+
+● Bash(B=worktree-agent-afa826136998d5d9e && git log --oneline main..$B && git
+      diff --stat main...$B | tail -12 && git diff main...$B -- src)
+  ⎿  0824437 Usage lines reach the container log through a handler on the p
+     harmag logger.
+     0e1b644 A failed second review or a failed redaction no longer loses a
+     … +190 lines (ctrl+o to expand)
+
+● Agent "Build fixes F1 to F6" finished · 4m 50s
+  ⎿  Found 30 new diagnostic issues in 6 files (ctrl+o to expand)
+
+● Bash(B=worktree-agent-afa826136998d5d9e && git merge -q --no-ff $B -m "Merge
+      the quote-check, worker, critic, writer, fallback, and logging fixes into
+      main…)
+  ⎿  120 passed in 13.39s
+     ## main...origin/main [ahead 7]
+     -4. **Quote check.** Code confirms that each quote occurs in the chunk
+     … +77 lines (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad && cp
+      /tmp/claude-1000/~-applicati…)
+  ⎿  Running in the background (↓ to manage)
+
+  Read 1 file, listed 1 directory (ctrl+o to expand)
+
+● The six fixes are merged on main (120 tests pass) and the rebuilt container is
+  answering the eleven questions now. I'll compare the run with yesterday's as
+  soon as it finishes, then write the handoff for the design session.  ⎿  Stop says: ⏱ 1m 04s (finished 07:58:11)
+
+✻ Churned for 8m 30s · done 6:58
+
+❯ while you're waiting, send an agent to clean yesterday's transcript           
+  (./ai-config/transcripts/2026-11-12a.txt) like the one from the day before    
+  was (nothing that should stay private should be published). then add the      
+  cleaned transcripts to the repo (remove them from .gitignore) as transparency 
+  is really important to me.                                                    
+
+● Bash(ls -la ai-config/transcripts/ .. | grep -v "^total" ; wc -l
+      ai-config/transcripts/*.txt;
+      O=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1…)
+  ⎿  ..:
+     drwxrwxr-x  3 the owner the owner   4096 Nov 12 19:46 .
+     drwxrwxr-x  4 the owner the owner   4096 Nov 11 10:50 ..
+     … +48 lines (ctrl+o to expand)
+
+● Bash(O=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d8
+      73-c136-46a8-a806-39a3d74fb507/scratchpad/transcript-clean; cut -c1-260
+      $O/redaction-lo…)
+  ⎿  Redaction log for 2026-11-11a transcript (no secret values and no brie
+     f text in this file)
+     Source: raw copy outside the repo. Output: the transcript in ai-config
+     … +130 lines (ctrl+o to expand)
+
+● builder(Clean second session transcript) Sonnet 5.5
+
+● A cleaning agent is working on a second transcript with yesterday's toolkit,
+  so I'm keeping that folder ignored until I've checked its result myself. I'm
+  logging your ruling now, then reading the eleven-question run. · summary
+
+● Bash(cat >> docs/decisions.md <<'EOF'…)
+  ⎿  sha256:363176476cb813ffde63e2238975f931057ffb995b90e521362677d6e940138
+     9
+     health: {"status":"ok","index":"ready"}
+     … +134 lines (ctrl+o to expand)
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; tail -6 $SP/live5.log | cut
+      -c1-260; echo;…)
+  ⎿  {
+       "id": "P4",
+       "status": 200,
+     … +97 lines (ctrl+o to expand)
+
+● Nine of the eleven questions are back from the rebuilt container: all 200 with
+  every expected source, no claim removed, and one retry round so far against
+  five in yesterday's run. The last two questions and the transcript cleaning
+  are still running; I'll verify both as they land.
+  ⎿  Stop says: ⏱ 2m 12s (finished 08:02:36)
+
+● Background command "Rebuild the image, restart the container on port 8000, and
+run the eleven eval questions once against it" completed (exit code 0)
+
+● Bash(SP=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad; tail -6 $SP/live5.log | cut
+      -c1-330; echo;…)
+  ⎿  {
+       "id": "C7",
+       "status": 200,
+     … +90 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import subprocess, urllib.parse, pathlib…)
+  ⎿  outgoing diff lines: 409 | hits: none
+     ## main...origin/main
+      M docs/decisions.md
+     … +2 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿  defense brief updated
+
+● Fixes are pushed (8d4a65a) and the run confirms them. Now writing the handoff
+  for the design session while the transcript cleaner finishes.
+
+● Write(docs/handoff.md)
+  ⎿  Added 80 lines, removed 82 lines
+        1  # Handoff
+        2  
+        3 -Rewritten on 2026-11-12 at the end of the second working sessi
+          -on. Rewrite this file before the next session stops.          
+        3 +Rewritten on 2026-11-13 at the end of the third working sessio
+          +n, which checked readiness and fixed what the checks found. Th
+          +e next session is the design session. Rewrite this file before
+          + that session stops.                                          
+        4  
+        5 -The deadline is 2026-11-13 at 23:59 Casablanca time, which is 
+          -22:59 UTC if Morocco is on UTC+1 that day. The graders assess 
+          -the last commit pushed before it.                             
+        5 +The deadline is 2026-11-13 at 23:59 Casablanca time. That is 2
+          +3:59 UTC: the machine's time zone data has Morocco on UTC+0 to
+          +day. The graders assess the last commit pushed before it.     
+        6  
+        7  ## Where things stand
+        8  
+        9 -A working proof of concept is on `main` and pushed (DEC-031). 
+          -It is the fallback submission. If nothing else lands, this sta
+          -te already meets the brief's hard constraints H1 to H12.      
+        9 +`main` is pushed and is the fallback submission. It meets the 
+          +brief's hard constraints H1 to H12. 120 tests pass with no net
+          +work (`uv run --locked pytest -q`).                           
+       10  
+       11 -## Read these first                                           
+       11 +Checked this session, before any change: a clone of the public
+          + repo with no credentials builds and answers, and the key and 
+          +the proxy host are in no tracked file and no commit.          
+       12  
+       13 -| File | Why |                                                
+       14 -|---|---|                                                     
+       15 -| `CLAUDE.md` | The working agreement. The owner decides, and 
+          -every ruling is logged |                                      
+       16 -| `docs/decisions.md` | The authority on what is decided, DEC-
+          -001 to DEC-031. Do not reopen a ruling. DEC-031 lists six choi
+          -ces the assistant made that the owner can still veto |        
+       17 -| `docs/architecture.md` | The design of the core, updated to 
+          -match what was built |                                        
+       18 -| `docs/scoping.md` | The brief's constraints H1 to H18, their
+          - consequences, and the risks |                                
+       19 -| [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_finding
+          -s.md) | The review of the first 47 properties, F01 to F16. Rea
+          -d before proposing property changes |                         
+       20 -| `defense-brief.md` | Private and gitignored. Evidence E1 to 
+          -E14, proxy details, and the defense of each ruling. Add to it 
+          -with every decision and measurement |                         
+       21 -| `ai-config/README.md` | Manifest of skills, MCP servers, age
+          -nts, and plugins. Add a row when a session first uses a skill 
+          -or an MCP server |                                            
+       13 +Six fixes then went in (DEC-033), each with a test that fails 
+          +without it:                                                   
+       14  
+       23 -## What exists on main                                        
+       15 +- The quote check compares whole words and whole numbers in or
+          +der. It ignores punctuation, Markdown marks, and case, and it 
+          +no longer accepts "5 mg" inside "0.5 mg".                     
+       16 + [redacted: private notes]
+       17 +- The critic sees each cited passage's section heading.       
+       18 + [redacted: private notes]
+          +ks or how it is organized.                                    
+       19 +- A failed second review, or a failed redaction call, ships th
+          +e draft in hand.                                              
+       20 +- The token usage lines reach the container log.              
+       21  
+       25 -Everything below is merged and pushed. 112 tests pass with no 
+          -network (`uv run --locked pytest -q`).                        
+       22 +One run of the eleven eval questions against the rebuilt conta
+          +iner, compared with the last run before the fixes:            
+       23  
+       27 -- **Corpus, index, tools.** Unchanged since the first session:
+          - 451 heading-tree chunks, hybrid exact search, four tools.    
+       28 -- **Type contract.** `models.py` holds what each LLM role retu
+          -rns and what `/ask` returns.                                  
+       29 -- **Agents.** `agents.py` has the planner, the worker with its
+          - four tool wrappers, the writer, the critic, and a redactor th
+          -at shares the writer's prompt and model. The writer has an out
+          -put validator: a draft whose prose uses a marker with no claim
+          - goes back to the writer inside the same call.                
+       30 -- **Grounding.** `grounding.py` has the quote check and the ma
+          -rker checks as pure functions.                                
+       31 -- **Pipeline.** `pipeline.py` runs stages 1 to 8 with the limi
+          -ts of DEC-026, records tokens per role, and emits trace events
+          -.                                                             
+       32 -- **API.** `api.py` builds the engine in the background, repor
+          -ts `building`, `ready`, or `failed` in `/health`, and routes `
+          -/ask` through the pipeline. A failed stage gives 502. A failed
+          - index build gives 503, and the next question starts the build
+          - again.                                                       
+       33 -- **Config.** The four `PHARMAG_*_MODEL` overrides, checked as
+          - strictly as the required variables.                          
+       34 -- **Page.** Plain. It shows the answer, the sources, and four 
+          -collapsed blocks: evidence, plan, tool calls, critic.         
+       35 -- **README and `.env.example`.** Run commands, endpoints, vari
+          -ables. No eval numbers yet.                                   
+       24 +| Measure | Before | After |                                  
+       25 +|---|---|---|                                                 
+       26 +| 200 with every expected source | 11 of 11 | 11 of 11 |      
+       27 +| Claims removed | 3 | 0 |                                    
+       28 +| Questions that took the retry round | 5 | 1 |               
+       29 +| Median seconds | 29 | 29 |                                  
+       30 +| Slowest, seconds | 99 | 59 |                                
+       31  
+       37 -Not built yet: `/ask/stream` and a page that uses it, the desi
+          -gn pass, the answer eval with DeepEval, a time cap per request
+          -, and the presentation outline.                               
+       32 +Each side is one run per question, and the variance between ru
+          +ns is large.                                                  
+       33  
+       39 -## How the proof of concept was checked                       
+       34 +## Read these first                                           
+       35  
+       41 - [redacted: private notes]
+          -e. With `[assignment text removed, p. 2]`, `/hea
+          -lth` reports `ready` 5 to 7 seconds after start, the page and 
+          -its two assets return 200, and a body with no `question` retur
+          -ns 422.                                                       
+       42 -- **Eleven eval questions against the container**, run twice: 
+          -once before the review fixes and once after. Both times all el
+          -even returned 200 with every expected source file, and no answ
+          -er needed the marker repair. P2 also cited one file outside it
+          -s expected and allowed lists (`medlineplus-apixaban.md`). In t
+          -he second run the median time was 29 seconds, from 3 to 99. Fi
+          -ve questions took the retry round, two had claims removed, and
+          - P2 carries two cautions.                                     
+       43 -- **Latency varies with the retry round.** P1 took 26 seconds 
+          -in two runs and 99 seconds in the third, when the critic sent 
+          -it back.                                                      
+       44 -- **The page in a real browser.** Headless Chrome asked a ques
+          -tion through the page. The answer, the sources, and the four b
+          -locks rendered, and no request went to another host. `/favicon
+          -.ico` returns 404.                                            
+       45 -- **What limits those numbers.** One run per question. The exp
+          -ected sources of C1 to C7 are our own. The expected answers ar
+          -e still drafts. Times depend on the proxy and on the model the
+          - graders configure.                                           
+       36 +| File | Why |                                                
+       37 +|---|---|                                                     
+       38 +| `CLAUDE.md` | The working agreement. The owner decides, and 
+          +every ruling is logged |                                      
+       39 +| `docs/decisions.md` | The authority on what is decided, DEC-
+          +001 to DEC-036. Do not reopen a ruling |                      
+       40 +| `docs/architecture.md` | The design of the core, matching wh
+          +at is built |                                                 
+       41 +| `src/pharmag/models.py` | `AskResponse` and `TraceEvent`, th
+          +e two shapes the page reads |                                 
+       42 +| `src/pharmag/static/` | The page as it is: `index.html`, `ap
+          +p.js`, `style.css` |                                          
+       43 +| `defense-brief.md` | Private and gitignored. Evidence E1 to 
+          +E16. Add to it with every decision and measurement |          
+       44 +| `ai-config/README.md` | Manifest of skills, MCP servers, age
+          +nts, and plugins. Add a row when a session first uses one |   
+       45  
+       47 -## Independent review of the pipeline                         
+       46 +## The design session, in order                               
+       47  
+       49 -A verifier agent compared the build with `docs/architecture.md
+          -` and the rulings, and proved each finding with scripted model
+          -s and no network. It shows what the code does when a model mis
+          -behaves, not how often a real model does. The status column sa
+          -ys what this session did about each finding. A builder fixed n
+          -ine of them, each with a test that fails without the fix.     
+       48 +The rulings are DEC-012 (a streaming endpoint feeds the page, 
+          +and `/ask` stays plain JSON) and DEC-013 (a static page with e
+          +very asset vendored, and the `impeccable` skill for the design
+          + pass). Each step names its check.                            
+       49  
+       51 -| ID | Severity | Finding | Status |                          
+       52 -|---|---|---|---|                                             
+       53 -| V1 | High | After the redaction, code checks only the marker
+          -s. A redactor that drops a marker and keeps its sentence, or i
+          -gnores an unmarked statement, lets a known-unsupported claim r
+          -each the user (against DEC-022) | Fixed. After the redaction, 
+          -code removes a sentence of the draft that carried an unsupport
+          -ed marker, or an unmarked statement, when it is still there wo
+          -rd for word. A paraphrase is beyond what code can see |       
+       54 -| V2 | Medium | When every worker of the retry round fails, th
+          -e request returns 502 and the complete first draft is lost (ag
+          -ainst DEC-007) | Fixed. The first draft ships, and the redacti
+          -on removes what is unsupported |                              
+       55 -| V3 | Medium | An in-scope plan with no sub-questions runs no
+          - worker, and the writer answers from nothing | Fixed. The ques
+          -tion itself becomes the one sub-question |                    
+       56 -| V4 | Medium | Two verdicts for one claim: the first wins, so
+          - `supported` can hide `unsupported` | Fixed. The worst status 
+          -wins |                                                        
+       57 -| V5 | Medium | A failed worker's exception text goes into the
+          - writer's prompt. A provider that echoes the key could put it 
+          -in an answer | Fixed. Only the exception's type name goes into
+          - `not_found` |                                                
+       58 -| V6 | Medium | `drop_dangling` ends a sentence at "e.g." or "
+          -St.", so the front of a removed sentence can stay | Fixed for 
+          -`e.g.`, `i.e.`, `St.`, `vs.`, and `Dr.`. A sentence must also 
+          -start with a capital, a digit, a bullet, `[`, or `(` |        
+       59 -| V7 | Medium | When every claim is removed, the answer is the
+          - disclaimer alone, with no explanation | Fixed. One sentence s
+          -ays that no claim was supported |                             
+       60 -| V8 | Low | The quote check accepts a trivial quote such as "
+          -the" or a partial word. How strict it should be is the owner's
+          - call | Open, owner |                                         
+       61 -| V9 | Low | A blank follow-up or unmarked string starts a ret
+          -ry round | Fixed |                                            
+       62 -| V10 | Low | `docs/architecture.md` said stage 8 "attaches th
+          -e trace", and no trace list is returned | Fixed in the doc |  
+       63 -| V11 | Low | The per-call usage line is logged at INFO, which
+          - uvicorn's logging hides. The cache warning does appear | Open
+          - |                                                            
+       64 -| V12 | Low | The three synchronous tools run in worker thread
+          -s, so `emit` is called off the event loop. `/ask/stream` must 
+          -hand events over with a thread-safe call | Open, matters for s
+          -tep 3 |                                                       
+       65 -| V13 | Low, unproven | A marker written as `[1-3]` passes eve
+          -ry marker check | Open |                                      
+       66 -| V14 | Low, unproven | A redactor that renumbers markers woul
+          -d attach a sentence to the wrong source | Open |              
+       50 +1. **`POST /ask/stream`.** Same body as `/ask`. The response i
+          +s `text/event-stream`: one `data:` line of JSON per `TraceEven
+          +t`, then one last event that holds the full `AskResponse`, or 
+          +an error with the stage and the detail.                       
+       51 +   - `pipeline.answer(question, engine, emit)` already calls `
+          +emit` for each event.                                         
+       52 +   - Three of the four tools are synchronous, so the framework
+          + runs them in worker threads and `emit` is called off the even
+          +t loop. Hand each event to an `asyncio.Queue` with `loop.call_
+          +soon_threadsafe`.                                             
+       53 +   - A config error and a failed index build answer 503 before
+          + the stream starts. A `PipelineError` after that becomes the e
+          +rror event, because the status is already 200.                
+       54 +   - Events that exist today: `started` and `finished` for eac
+          +h stage (`plan`, `research`, `write`, `quote_check`, `review`,
+          + `retry`, `redact`, `respond`), and `tool_call` with the worke
+          +r's sub-question, the tool, its arguments, and its hits. No ev
+          +ent carries the plan or the verdicts. Add one if the page shou
+          +ld show the plan before the answer exists.                    
+       55 +   - Check: a test with a scripted engine that asserts the ord
+          +er of the events and the last payload, then `curl -N` against 
+          +the container.                                                
+       56 +2. **The page.** It shows progress per stage while the user wa
+          +its (answers took 2 to 59 seconds in the last run), then the a
+          +nswer, the cautions, the sources with file, section, lines, an
+          +d quote, and the trace (plan, tool calls, critic) folded away.
+       57 +   - The `answer` string already ends with the cautions, a num
+          +bered source list, and the disclaimer as plain text, for a rea
+          +der of the API. Decide whether the page prints `answer` whole 
+          +or builds those parts from `citations`, `critic.cautions`, and
+          + `disclaimer`. It must not show them twice.                   
+       58 +   - No build step and no file from another host. The test for
+          + property 12 fails on any reference to another host.          
+       59 +   - `/favicon.ico` returns 404 today.                        
+       60 +3. **The design pass** with the `impeccable` skill. Copy the s
+          +kill into `ai-config/` and add its row to the manifest when it
+          + is first used.                                               
+       61 +4. **Check on the real artifact.** Rebuild the container, open
+          + the page in a real browser, ask the four public questions, an
+          +d confirm that no request goes to another host. `uv run --no-p
+          +roject --with playwright python <script>` with `channel="chrom
+          +e"` drives the installed Chrome without a project dependency. 
+       62  
+       68 -The verifier also ran 21 mutations of the code, and eleven sur
+          -vived the tests. Tests now guard nine of those behaviours: eve
+          -ry citation of a claim is checked, a chunk that no tool return
+          -ed fails the quote check, the ambiguous path and its cautions,
+          - the critic's unmarked list, a missing verdict, a duplicate ve
+          -rdict, `sources` without uncited claims, the Markdown-emphasis
+          - and Unicode folding, and a stronger property for `drop_dangli
+          -ng`. Two are still unguarded: the cache-drop warning, and the 
+          -`asyncio.shield` around the engine build.                     
+       63 +## How to run things                                          
+       64  
+       65 +- Container: `[assignment text removed, p. 2]
+          +[assignment text removed, p. 2]`. A container named `pharmag-poc` alr
+          +eady runs the current `main` on port 8000. Remove it with `doc
+          +ker rm -f pharmag-poc` before starting another on that port.  
+       66 +- Eleven questions against a running server: `python3 evals/li
+          +ve_check.py http://localhost:8000 <out_dir>`. It saves each re
+          +sponse and prints one line per question with the missing and e
+          +xtra sources, the review rounds, and the tokens.              
+       67 +- Anything live outside the container: `uv run --locked --env-
+          +file .env ...`. The config check is strict (DEC-014), so a quo
+          +ted or misspelled variable makes `/ask` return 503.           
+       68 +- To see why a retry round fired, run `pipeline.answer` in a s
+          +cript that wraps `pipeline._check` and prints the verdicts and
+          + the unmarked statements of each round.                       
+       69 +                                                              
+       70  ## What waits on the owner
+       71  
+       72  Each item has a date the owner is as likely to miss as to meet
+           .
+       73  
+       74 -1. **The six choices in DEC-031.** Veto or accept each. The fi
+          -rst one matters most: code appends the cautions, a numbered so
+          -urce list, and the disclaimer to the `answer` text. By 2026-11
+          --13, 10:00.                                                   
+       75 -2. **Expected answers.** `evals/questions.json` still says "Dr
+          -aft". Confirm or correct each. This blocks the answer eval. By
+          - 2026-11-13, 11:00.                                           
+       76 -3. **Properties.** `tests/PROPERTIES.md` now lists the first 4
+          -7 entries plus C7, C8, S14 to S18, and 25 to 40. The owner's r
+          -ule is to confirm each one. The proposals of F01 to F16 also w
+          -ait. By 2026-11-13, 13:00.                                    
+       77 -4. **`ai-config/transcripts/2026-11-11a.txt`.** Cleaned on the
+          - owner's request and still untracked, because committing it pu
+          -blishes it. A subagent replaced the four env values, the proxy
+          -'s account details, the home path, and the owner's name with v
+          -isible placeholders, and changed 60 of 2,757 lines. An indepen
+          -dent check by the main session found none of the env values, n
+          -o run of 8 or more words shared with the brief, and no changed
+          - line without a placeholder. Left in on purpose: the repo's ow
+          -n SSH remote with the GitHub handle, the `Africa/Casablanca` t
+          -ime zone in usage notices, the plan name on line 2, and sessio
+          -n IDs in temp paths. The raw copy is one folder above the repo
+          -, outside git. The owner says whether to commit it. By 2026-11
+          --13, 12:00.                                                   
+       78 -5. **The built-in `artifact-diagramming` skill** is listed in 
+          -the manifest without a copy, because it ships inside Claude Co
+          -de with no license that permits one. The working agreement say
+          -s to copy each used skill. Accept or overrule. By 2026-11-13, 
+          -12:00.                                                        
+       79 -6. **How strict the quote check is (V8).** Today a quote of on
+          -e word, or of part of a word, passes when it occurs in the pas
+          -sage. A floor of a few whole words would close that. By 2026-1
+          -1-13, 12:00.                                                  
+       80 -7. **Earlier choices the owner can veto.** Python 3.15. `bm25s
+          -`. `httpx2` as the test client dependency. A 503 from `/ask` o
+          -n a config error. This handoff file being tracked and public. 
+       81 -8. **The presentation overview.** A private page at <https://c
+          -laude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den>. Say whether a copy 
+          -belongs in the repo.                                          
+       82 -9. **The rehearsal and the summary email** are the owner's own
+          - tasks. Rehearse against a timer by 2026-11-13, 19:00. Send th
+          -e email with the repo link by 2026-11-13, 21:30.              
+       74 +1. **The new and changed properties.** `tests/PROPERTIES.md` r
+          +estates property 25 and adds 59 to 66. The owner's rule is to 
+          +confirm each one. By 2026-11-13, 12:00.                       
+       75 +2. **The time cap per request (DEC-012).** No cap is set. The 
+          +slowest answers are now slow in the research stage, which a ca
+          +p on the retry round would not shorten. The model client's own
+          + timeout is 600 seconds per call. Recommended: a timeout of 60
+          + seconds per model call, and no retry round once 60 seconds ha
+          +ve passed. By 2026-11-13, 12:00.                              
+       76 +3. **One more fix for P3.** No run so far states that the warf
+          +arin label names sertraline's drug class in its interaction ta
+          + [redacted: private notes]
+          +nd the tool's output does not tell the worker which terms matc
+          +hed in it. Recommended: print the matched terms with each pass
+          +age, then run P3 three times. By 2026-11-13, 12:00.           
+       77 +4. **The rehearsal and the summary email** are the owner's own
+          + tasks. Rehearse against a timer by 2026-11-13, 19:00. Send th
+          +e email with the repo link by 2026-11-13, 21:30.              
+       78  
+       84 -## Next steps, in order                                       
+       79 +## After the design session                                   
+       80  
+       86 -Each step names the check that proves it. Steps 1 and 2 raise 
+          -the grade most. Step 4 is required by the brief.              
+       81 +1. **Answer eval with DeepEval (DEC-015).** `evals/live_check.
+          +py` compares sources only. Add key-fact coverage, the DeepEval
+          + metrics, latency, and tokens per question. The expected answe
+          +rs are confirmed (DEC-034). Check: a results file, the limits 
+          +of each number stated beside it, and the numbers in the README
+          +.                                                             
+       82 +2. **Submission polish.** The presentation outline, a draft of
+          + the summary email, a secret scan of the whole tree, a clean c
+          +lone that builds and answers, and this file rewritten as a not
+          +e on the state at submission.                                 
+       83 +3. **Deferred.** The property-review follow-ups F01 to F16 in 
+          +[`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_findings.
+          +md) (DEC-034).                                                
+       84  
+       88 -1. **Answer quality on the public questions.** P3's answer is 
+          -correct but thin: two or three sentences. The planner made one
+          - sub-question where the prompt allows one per drug as well. Ch
+          -eck: P3 cites warfarin sections 7.3 and 2.4 and sertraline sec
+          -tions 5.3 and 7.1, three runs in a row.                       
+       89 -2. **Answer eval with DeepEval (DEC-015).** The session's thro
+          -waway script already posts the eleven questions and compares t
+          -he sources. Its logic belongs in `evals/`: source recall and p
+          -recision, key-fact coverage, the DeepEval metrics, latency, an
+          -d tokens per question. DeepEval is a development-only dependen
+          -cy. If it has no Python 3.15 wheels, run it from its own envir
+          -onment, since it only calls the API over HTTP. Check: a result
+          -s file, the limits of each number stated beside it, and the nu
+          -mbers in the README.                                          
+       90 -3. **Interface (DEC-012, DEC-013).** Add `/ask/stream`, which 
+          -sends each `TraceEvent` and ends with the full response. The p
+          -ipeline already emits the events. Then the page shows progress
+          - per stage, and the `impeccable` skill handles the design pass
+          -. Add a favicon. Check: the page works in the container with n
+          -o request to another host, in a real browser.                 
+       91 -4. **Submission polish.** A secret scan of the whole tree, the
+          - presentation outline from section 1 of the private brief, a d
+          -raft of the summary email, and a clean clone that builds and a
+          -nswers. Check: `git clone`, the two documented commands, and o
+          -ne question, on a path with no `.env` history.                
+       92 -5. **Latency and limits (DEC-012, DEC-026).** A retry round ad
+          -ds 15 to 26 seconds. The slowest question took 72 seconds. Set
+          - a time cap per request from these measurements, and decide wh
+          -ether six workers and ten tool calls stay. Check: the cap is a
+          - named constant with a test, and the owner has ruled on the li
+          -mits.                                                         
+       93 -6. **Property-review follow-ups.** Only after the owner rules 
+          -on item 3 above. Work through F01 to F16 by severity, and upda
+          -te `tests/PROPERTIES.md` and the tests together.              
+       85 +## Open findings                                              
+       86  
+       87 +| ID | Finding | Status |                                     
+       88 +|---|---|---|                                                 
+       89 +| V12 | `emit` is called off the event loop by the synchronous
+          + tools | Open. Step 1 above handles it |                      
+       90 +| V13 | A marker written as a range, such as `[1-3]`, is not r
+          +ead as a marker | Documented limit (DEC-034). No saved answer 
+          +shows one |                                                   
+       91 +| V14 | A redactor that renumbers markers would attach a sente
+          +nce to the wrong source | Documented limit (DEC-034). The prom
+          +pt forbids it |                                               
+       92 +| Tests | Two behaviours have no test: the cache-drop warning,
+          + and the `asyncio.shield` around the engine build | Open, low 
+          +|                                                             
+       93 +                                                              
+       94 +V8 (how strict the quote check is) and V11 (the usage lines) a
+          +re closed by DEC-033.                                         
+       95 +                                                              
+       96  ## Facts the code does not show
+       97  
+       97 -- **`lookup_glossary` was never called** in the eleven questio
+          -ns. Workers chose among the other three tools. Expect the ques
+          -tion "is the fourth tool needed?".                            
+       98 -- **The critic did not use "ambiguous"** until one paragraph w
+          -as added to its prompt, about claims that say two documents ag
+          -ree while the passages word the item differently. P2 now carri
+          -es three cautions, which may be one or two too many.          
+       99 -- **PydanticAI 2.67 refuses a run-level `output_type`** on an 
+          -agent that has output validators. That is why the redaction ha
+          -s its own agent. Inside an output validator, `ctx.retry` count
+          -s the rejections so far and `ctx.max_retries` is the budget.  
+      100 -- **The proxy reports cached input tokens on some calls only.*
+          -* The pipeline logs a warning when a role's cache hit rate fal
+          -ls by more than 0.25. The INFO usage lines do not reach the co
+          -ntainer log, because nothing configures logging.              
+      101 -- **The first full run hid a defect behind a green result.** A
+          -ll eleven questions had their expected sources, yet P2 had los
+          -t half its answer: the writer cited markers 8 to 10 with only 
+          -7 claims, and the last-resort repair dropped those sentences. 
+          -Check `critic.marker_check` and read the answers, not only the
+          - sources.                                                     
+      102 -- **The config is strict (DEC-014).** A quoted, missing, or mi
+          -sspelled variable makes `/ask` return 503. Run anything live w
+          -ith `uv run --locked --env-file .env ...`.                    
+      103 -- **The proxy, in outline.** The SDK paths work on the base UR
+          -L with no `/v1` suffix. Small chat calls take 1 to 5 seconds. 
+          -The private brief has the details.                            
+      104 -- **`GLOSSARY.md` uses Windows line ends.** The parser drops t
+          -hem, and the quote check compares text with whitespace normali
+          -zed.                                                          
+       98 +- **What started the retry round before the fixes.** In 15 tra
+          +ced answers, 7 took it. The causes recorded were a quote that 
+          +failed on punctuation, a writer's remark about what a document
+          + lacks, and the critic not seeing a section heading. Where the
+          + [redacted: private notes]
+          + statement.                                                   
+       99 +- **Quotes of two words are real.** "Malignant hypertension" i
+          +s a whole list item, so the quote check has no minimum length.
+      100 +- **Sources vary between runs.** C5 cited both aspirin files i
+          +n three runs and only the MedlinePlus file in a fourth. P2 oft
+          +en cites `medlineplus-apixaban.md` beside the two labels. P3 n
+          +ow cites the two MedlinePlus files as well.                   
+      101 +- **`lookup_glossary` was not called** in any of the eleven ev
+          +al questions. A question about a glossary term does cite `GLOS
+          +SARY.md`.                                                     
+      102 +- **PydanticAI 2.67.** A run-level `output_type` is refused on
+          + an agent that has output validators, which is why the redacti
+          +on has its own agent. Inside an output validator, `ctx.retry` 
+          +counts the rejections so far and `ctx.max_retries` is the budg
+          +et.                                                           
+      103 +- **The proxy reports cached input tokens on some calls only.*
+          +* The log warns when a role's cache hit rate falls by more tha
+          +n 0.25.                                                       
+      104 +- **`GLOSSARY.md` uses Windows line ends.** The parser drops t
+          +hem.                                                          
+      105  - **A flaky property test can be a false property.** Ask wheth
+           er the property is true before changing code.
+      106  
+      107  ## How the work ran, for the next session's planning
+      108  
+      109 -- The main session wrote the type contract first, as signature
+          -s with no body, and pushed it. Two builders then worked in par
+          -allel worktrees against it with no merge conflict. A third bui
+          -lder made the fixes. A verifier agent reviewed the result.    
+      109 +- A builder agent works in its own worktree against a written 
+          +brief, and the main session reads the diff, reruns the tests, 
+          +and checks the result on the container.                       
+      110  - `isolation: "worktree"` branches from the remote default bra
+           nch, so push before dispatching. A worktree has no `.env`, no 
+           brief, and no private notes, so a builder makes no live calls 
+           and the brief must carry any fact from those files.
+      111 -- Say in each brief that commit messages end with the session 
+          -link line. Three builders read "no co-author lines" as "no tra
+          -ilers" and left it out.                                       
+      112 -- Builders cannot run a long compound command with a heredoc i
+          -nside a worktree. They write files with the Write tool and run
+          - one command per call.                                        
+      113 -- `setsid nohup uv run uvicorn ... & echo $!` records the laun
+          -cher's PID, not the server's. Find the listener with `ss -ltnp
+          -` and kill that PID.                                          
+      114 -- A page check in a real browser needs no project dependency: 
+          -`uv run --no-project --with playwright python <script>` with `
+          -channel="chrome"` drives the installed Chrome.                
+      115 -- The owner's plan has a 5-hour usage limit. Check the working
+          - tree before redoing a builder's work.                        
+      111 +- Say in each brief that commit messages end with the session 
+          +link line, and carry no co-author line.                       
+      112 +- Builders write files with the Write tool and run one command
+          + per call inside a worktree.                                  
+      113  - After a merge, remove the worktree with `git worktree remove
+           ` and delete the branch.
+      114  - Before each commit, scan the staged diff for the key and the
+            proxy hostname. Push after each verified step (DEC-020).
+      118 -- Tracked docs follow pstack's `technical-writing` and `unslop
+          -` skills, and stay free of the proxy hostname and of the brief
+          -'s own text. The four public questions are the one exception (
+          -DEC-027).                                                     
+      115 +- The owner's plan has a usage limit. Check the working tree b
+          +efore redoing a builder's work, and keep live runs to what a d
+          +ecision needs.                                                
+      116 +- Tracked docs stay free of the proxy hostname and of the brie
+          +f's own text. The four public questions are the one exception 
+          +(DEC-027).                                                    
+
+● Bash(cp /tmp/claude-1000/~-applications-sntx-work-test-pharmag/932ff
+      93e-1f53-4679-9d96-f9d5a6e5bac9/scratchpad/live_check.py
+      evals/live_check.py && sed -i…)
+  ⎿   4 files changed, 154 insertions(+), 89 deletions(-) | secret hits: no
+     ne
+     120 passed in 13.32s
+     … +3 lines (ctrl+o to expand)
+
+● The handoff for the design session is pushed (2a2311a), with the fixes and
+  their before-and-after numbers. The only thing still in flight is the
+  transcript cleaning; when the agent reports I will verify its result with my
+  own checks before anything is un-ignored or committed.
+  ⎿  Stop says: ⏱ 2m 45s (finished 08:05:53)
+
+❯ i don't think we'll have enough usage for checks so trust the agent's work    
+  (blindly).                                                                    
+
+● Understood: no independent verification pass. When the cleaning agent reports,
+  I will take its result as is, remove the ignore rule, add both transcripts
+  with a short note in ai-config/README.md on what was redacted, and push.
+
+  One thing I will keep, because it costs no extra step: the commit command
+  itself still runs the standing scan of the staged diff for the key and the
+  proxy host. If that scan hits, I stop and tell you instead of publishing.
+
+  The agent has not reported yet.
+  ⎿  Stop says: ⏱ 17.1s (finished 08:16:28)
+
+
+● Teammate @transcript-cleaner finished
+  Both transcripts are cleaned in place with the line counts unchanged, and the
+  checks pass. A late review round caught three misses, which I fixed. My fix
+  for the third is in the 11a section below.
+
+  Changed lines
+  - 2026-11-12a.txt: 60 changed lines out of 2,356.
+  - 2026-11-11a.txt: 477 lines changed in this pass, so it now differs from its
+    raw copy on 519 lines (60 yesterday). This is intended and not damage. The
+    whole defense-brief.md display blocks were redacted under one rule (see
+    Category 5 below).
+
+  12a counts per category
+  - 1: 4 lines. They are the chat model on 929 and 2122, a word that named a key
+    fragment on 2149, and the chat model's provider and tier on 2204. The base
+    URL, API key and embedding model never appear.
+  - 2: 4 lines (2193, 2199, 2200, 2218): model count, key length, spend, and the
+    length of a proxy host label.
+  - 3: 3 lines (386-387, 1357). That is two runs of 16 and 9 shared words.
+  - 4: 47 replacements: 13 for ~, 32 for ~, 2 for the
+    owner's name. No email addresses were removed.
+  - 5: 2 lines.
+
+  Checks
+  - verify.py on 12a: ALL PASS. The env values, the host, ~ and the owner
+    are all at zero hits.
+  - verify.py on 11a: ALL PASS as a regression check.
+  - overlap.py: runs of 8 or more words shared with the brief went from 2 to 0
+    in 12a, and 11a is at 0.
+  - Structural check: new structure_check.py passes on both files. It fails on
+    the pre-pass 11a file, and it fails on a copy where I put line 1941 back.
+  - Rebuilds are idempotent.
+
+  Category 5 changes
+  - 12a 986-987: printed lines of defense-brief.md became [redacted: private 
+    notes].
+  - 11a, [redacted: private notes], 475 lines in 9 tool calls: every displayed
+    line of defense-brief.md content, covering 304-313, 825-1121, 1288-1356,
+    1902-1957, 2257-2300 and 2628-2686. The headers and ... markers stay. These
+    lines say more than the tracked docs, and most facts appear in no tracked
+    file ([redacted: private notes]
+    [redacted: private notes]).
+  - 11a 13: the role type "[redacted: personal detail]" became [redacted: personal detail]. It is
+    in no tracked file.
+  - 11a 482: the name of another project became [redacted: personal detail].
+  - 12a (a) and (c): I found no other people or personal matters.
+
+  Judgment calls
+  - Over-redacted on purpose: 12a 986-987 and a few 11a lines hold facts that
+    are public in evals/results/retrieval.json. I redacted them to keep one
+    rule. The pre-pass 11a file is work/11a-before-cat5.txt if you want to
+    restore any.
+  - Docker run command: the 9-word run on 1357 is also in the tracked docs. I
+    redacted it because the rule says 8 or more words.
+  - Left in place, and I'm not fully sure:
+    - The private presentation page link on 1203, 1425, 1873, 2086, 2277
+      and 2354. It is already in the pushed handoff.
+    - The claude.ai/code/session_... link on 568. All 31 commit messages carry
+      one.
+    - "Matt Pocock" and "mattpocock" on 11a 268, 316-317, 544-549, 563, 1404
+      and 1463. They are the public MIT holder, also in the tracked LICENSE.
+    - The docker gateway address 192.168.65.1, and ~/snags.md.
+  - 5 to 7 shared words, left in place:
+    - 12a lines 893, 1249-1250, 2176-2177, 2181 and 2186. The one to judge is
+      2176-2177, a quote inside the cleaner's report.
+    - 11a 1920-1921 is now inside a placeholder.
+  - Yesterday's log is stale: it says 915 and 920 were kept, but the main
+    session redacted them in 11a afterwards.
+  - Not in the transcripts: tracked ai-config/CLAUDE.home.md line 62 is pushed.
+    It names the same other project and cites a real person as the author of a
+    public post. I did not touch it; the owner decides.
+
+  Misses caught late. They were a word naming a key fragment (2149), the
+  provider and tier phrase (2204), and a block boundary I had set by hand (11a
+  1941). None of my string checks could see them: the fragment scan matches
+  strings, not sentences, and `ver
+  [result truncated — ask the agent for the rest via SendMessage]
+
+  Searched for 1 pattern (ctrl+o to expand)
+● Bash(sed -n '386,387p;1357p' ai-config/transcripts/2026-11-12a.txt | cut
+      -c1-240; echo "--- other bracketed removal marks:"; grep -oh '\[[a-z
+      ]*\(removed\|omitted\|r…)
+  ⎿    ⎿  69:       • [assignment text removed, p. 2]
+          [assignment text removed, p. 2]
+               +e. With `[assignment text removed, p. 2]`, `/hea
+     … +8 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿   5 files changed, 5128 insertions(+), 3 deletions(-) | env-value hits:
+      none
+     548a4f7 Publish the cleaned transcripts of the first two sessions and
+     … +2 lines (ctrl+o to expand)
+
+● Everything this session set out to do is pushed. main is at 548a4f7, and the
+  rebuilt container is running it on port 8000.
+
+  Fixes, checked with one run
+
+  The six fixes are merged and 120 tests pass. One run of the eleven questions
+   [redacted: private notes]
+
+  ┌─────────────────────────────────────┬──────────┬──────────┐
+  │               Measure               │  Before  │  After   │
+  ├─────────────────────────────────────┼──────────┼──────────┤
+  │ 200 with every expected source      │ 11 of 11 │ 11 of 11 │
+  ├─────────────────────────────────────┼──────────┼──────────┤
+  │ Claims removed                      │ 3        │ 0        │
+  ├─────────────────────────────────────┼──────────┼──────────┤
+  │ Questions that took the retry round │ 5        │ 1        │
+  ├─────────────────────────────────────┼──────────┼──────────┤
+  │ Median seconds                      │ 29       │ 29       │
+  ├─────────────────────────────────────┼──────────┼──────────┤
+  │ Slowest, seconds                    │ 99       │ 59       │
+  └─────────────────────────────────────┴──────────┴──────────┘
+
+  - P1: the complete contraindications list in 29 s, from dailymed-warfarin.md
+    alone.
+  - P2: two cautions, and it still cites medlineplus-apixaban.md for one extra
+    claim.
+  - P3: four bullets and both expected files, but it still does not say that the
+    warfarin label names sertraline's class in its interaction table.
+  - Container log: the token usage lines now appear.
+
+  Transcripts
+
+  Both cleaned transcripts are published in ai-config/transcripts/, with a table
+  of the removal marks in ai-config/README.md. As you asked, I took the agent's
+  result without a check of my own; the commit's standing scan for the env
+  values found nothing. DEC-036 records both points.
+
+  What the agent reported:
+  - Second session: 60 of 2,356 lines changed.
+  - First session: it now also hides every displayed line of defense-brief.md
+    (475 lines), because those say more than the tracked docs.
+  - Left in place, and it was unsure: the private presentation page link, which
+    the pushed handoff already carries.
+  - Outside the transcripts: the tracked ai-config/CLAUDE.home.md (line 62)
+    names another project of yours and a real person as the author of a public
+    post. It is already pushed and I did not touch it.
+
+  The raw copy of the second transcript is one folder above the repo, next to
+  the first.
+
+  For the design session
+
+  docs/handoff.md is rewritten for it: the /ask/stream spec, the page
+  constraints, the run recipes and the checks. The eleven-question script now
+  lives in evals/live_check.py.
+
+  Waiting on you
+
+  1. Properties to confirm (your rule; the full wording is in
+     tests/PROPERTIES.md):
+     - 25, restated: any run of whole words and numbers of a passage passes the
+       quote check, whatever the spacing, case or punctuation.
+     - 59: the four real quotes that failed only on punctuation pass; the
+       stitched quote and the paraphrase fail.
+     - 60: "5 mg" is not in "0.5 mg", "< 30" is not in "≥ 30", "the" is not in
+       "other".
+     - 61 and 62: a worker's bad quote goes back to that worker; if it stays
+       bad, stage 4 removes the claim.
+     - 63: the critic's prompt shows each passage's section heading.
+     - 64 and 65: a failed second review or redaction call still answers, with
+       the unsupported sentence removed.
+     - 66: the usage lines are logged, without the HTTP client's request lines.
+  2. Time cap: none is set. The slow answers are now slow in research, which a
+     cap on the retry round would not shorten. I recommend a 60 s timeout per
+     model call and no retry round once 60 s have passed.
+  3. P3: I recommend showing the worker which terms matched in each
+     find_interactions passage, then running P3 three times. It is a one-line
+     change that I have not made.
+
+  A reply on these by 12:00 keeps them inside the design session. Your rehearsal
+  (19:00) and the summary email (21:30) stand as before.
+
+  Not checked: the cleaned transcripts (your call), a second run of the
+  questions, an arm64 build, and no separate reviewer agent read the six fixes.
+  One process note: the key-fact verifier cut long corpus lines in the shell, a
+  repeat of an earlier truncation snag, so I would add "read long-line files
+  with the Read tool" to verifier briefs.

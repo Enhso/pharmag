@@ -272,3 +272,17 @@ The session started with checks on the pushed proof of concept: a clean clone, a
   - Retrieval and tool use are one row, Retrieve, because in this pipeline a retrieval is a tool call. The row names the tools and counts the passages and files.
   - No table rendering, because the writer's prompt allows paragraphs and bullets only. No dark theme. No fallback from the stream to `/ask`.
   - The main session writes the three page files, because the design judgment is the task. A builder agent wrote the stream endpoint.
+
+### DEC-038. The product's name on the page is PharmAg
+
+- **Decision.** The page's header and its browser tab title say "PharmAg". Wherever the page named the product "Pharmacology research assistant", it now says "PharmAg".
+- **Owner's words.** "this must be a coherent product."
+- **The assistant's choice, open to the owner's veto.** The same rename in `PRODUCT.md`, in the title of `DESIGN.md`, and in `.impeccable/design.json`, which are not part of the page. The README and the Python package keep the lower-case `pharmag`.
+- **No test run.** The owner said the change was too small to rerun the tests. The header and the title were read back from the rebuilt container's page.
+
+### DEC-039. The morning transcript of 2026-11-13 is cleaned and published
+
+- **Decision.** An agent cleans the transcript of the morning session of 2026-11-13 the way the first two were cleaned (DEC-036), and the cleaned file is published in `ai-config/transcripts/`.
+- **No second check.** The owner told the assistant to take the agent's result as it is: "use a subagent and trust its work as we don't have much usage to spare." The main session ran no independent check of the cleaned file. The push still ran the standing scan for the env values.
+- **What the agent reported.** The line count is unchanged at 1,767, and 221 lines changed. Its own checks found none of the env values, no owner name or home path, no run of eight words shared with the assignment brief outside the four public questions, and no line of eight words shared with the private notes. It redacted seven lines that are public text because they also occur in the private notes.
+

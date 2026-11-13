@@ -71,7 +71,7 @@ Versions come from the Claude Code plugin registry on 2026-11-11. No plugin file
 
 ## Session transcripts
 
-`transcripts/` holds the terminal transcripts of the first two working sessions, published at the owner's request (DEC-036). An agent cleaned each file in place and left the line count unchanged. Every removal shows as a visible mark:
+`transcripts/` holds the terminal transcripts of the first three working sessions, published at the owner's request (DEC-036, DEC-039). The third is the morning session of 2026-11-13. An agent cleaned each file in place and left the line count unchanged. Every removal shows as a visible mark:
 
 | Mark | What it replaces |
 |---|---|
