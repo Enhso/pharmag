@@ -627,13 +627,15 @@ body:not([data-view="empty"]) .asked {
   margin-top: 1em;
 }
 
-.prose ul,
-.prose ol {
+/* The dash hangs in the page margin at every width, so the answer's text starts on the column edge.
+   It is about 14px wide and the narrowest margin is 20px. */
+.prose ul {
   padding-left: 0;
+  list-style-type: "\2013\00a0";
 }
 
-.prose ul {
-  list-style-type: "\2013\00a0\00a0";
+.prose ol {
+  padding-left: 1.5em;
 }
 
 .prose li + li {
@@ -859,11 +861,6 @@ body:not([data-view="empty"]) .asked {
     line-height: 1.6;
   }
 
-  /* No margin to hang a dash in: the list keeps a small indent. */
-  .prose ul,
-  .prose ol {
-    padding-left: 1.25em;
-  }
 
   body[data-view="answered"] .foot {
     padding-block: 0.625rem;
