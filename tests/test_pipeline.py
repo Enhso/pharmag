@@ -328,6 +328,24 @@ def test_a_failed_retry_round_ships_the_first_draft_with_the_flags_redacted(fail
     assert "[1]" in r.answer and "moon dust" not in r.answer
 
 
+def test_a_critic_that_fails_in_round_two_ships_the_reviewed_first_draft_redacted():
+    worker, _ = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
+    writer, writes = scripted(BOTH, ONLY_GOOD, "Warfarin has contraindications [1].")
+    critic, reviews = scripted(supported(2), RuntimeError("model down"))
+    r = run(scripted(PLAN)[0], worker, writer, critic)
+    assert len(reviews) == 2 and r.critic.review_rounds == 1
+    assert [x.text for x in r.critic.removed] == [PLANTED.text]  # the first draft's verdicts, not the revision's
+    assert "[1]" in r.answer and "moon dust" not in r.answer
+
+
+def test_a_redaction_call_that_fails_still_answers_with_the_unsupported_sentence_removed():
+    worker, _ = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
+    writer, _ = scripted(BOTH, BOTH, RuntimeError("model down"))
+    r = run(scripted(PLAN)[0], worker, writer, scripted(supported(2))[0])
+    assert r.critic.marker_check == "repaired" and [x.text for x in r.critic.removed] == [PLANTED.text]
+    assert "[1]" in r.answer and "moon dust" not in r.answer
+
+
 def test_an_in_scope_plan_without_sub_questions_researches_the_question_itself():
     worker, runs = researcher(WARFARIN_SECTION)
     r = run(scripted(PLAN.model_copy(update={"sub_questions": []}))[0], worker, scripted(ONLY_GOOD)[0], scripted(supported(1))[0])
