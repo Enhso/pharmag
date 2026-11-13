@@ -237,6 +237,8 @@ async def _check(req: _Request, draft: Draft) -> tuple[list[ClaimVerdict], list[
             verdicts.append(
                 ClaimVerdict(claim=n, status="unsupported", reason="The critic gave no verdict.", follow_up=claim.text)
             )
+    counts = {s: sum(v.status == s for v in verdicts) for s in worst}
+    req.event("review", "reviewed", **counts, unmarked=len(review.unmarked))
     return verdicts, review.unmarked
 
 
@@ -255,6 +257,13 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
 
     async with req.stage("plan"):
         plan = await req.run("planner", planner, question, deps=engine.tools)
+        req.event(
+            "plan",
+            "planned",
+            in_scope=plan.in_scope,
+            reason=plan.reason,
+            sub_questions=[{"text": sq.text, "drugs": sq.drugs} for sq in plan.sub_questions],
+        )
     if not plan.in_scope:
         timings, usage = req.totals()
         refusal = f"I can only answer questions about the pharmacology of the medicines in my documents. {plan.reason}"
@@ -277,6 +286,7 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
         pairs = await _research(req, "research", tasks)
     async with req.stage("write"):
         draft = await req.run("writer", writer, f"Question: {question}\n\nFindings:\n{_findings_text(pairs)}")
+        req.event("write", "drafted", claims=len(draft.claims))
     verdicts, unmarked = await _check(req, draft)
     rounds = 1
 
@@ -298,6 +308,7 @@ async def answer(question: str, engine: Engine, emit: Emit | None = None) -> Ask
                     "Write a revised draft. Support each unsupported claim with the findings, or leave it out when the "
                     "findings do not support it. Give every factual sentence a marker.",
                 )
+                req.event("retry", "drafted", claims=len(revised.claims))
             new_verdicts, new_unmarked = await _check(req, revised)  # the first draft stays until this passes
         except PipelineError as e:  # DEC-007: the first draft ships with the flags that remain
             log.warning("the retry round failed; answering from the first round: %s", e)

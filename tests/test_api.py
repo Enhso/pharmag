@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import re
@@ -11,7 +12,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from pharmag.api import DISCLAIMER, STATIC_DIR, _scrub, app
-from pharmag.models import AskResponse, CriticReport, Plan, Usage
+from pharmag.models import AskResponse, CriticReport, Plan, TraceEvent, Usage
 from pharmag.pipeline import PipelineError
 
 def test_importing_the_api_enables_the_pipelines_usage_lines_without_touching_the_root_logger():
@@ -60,6 +61,7 @@ class Fakes:
         self.fail_text = f"embedding call failed for key {KEY}"
         self.hold = False  # while true, a build attempt waits
         self.pipeline_error = None
+        self.script = None  # an async function of emit that runs inside the fake answer
 
 
 @pytest.fixture
@@ -74,8 +76,10 @@ def fakes(monkeypatch):
             raise RuntimeError(fakes.fail_text)
         return ENGINE
 
-    async def answer(question, engine):
+    async def answer(question, engine, emit=None):
         assert engine is ENGINE
+        if fakes.script:
+            await fakes.script(emit)
         if fakes.pipeline_error:
             raise fakes.pipeline_error
         return FAKE_RESPONSE
@@ -232,6 +236,84 @@ def test_ask_is_503_and_names_the_bad_variables_with_invalid_config(client_for):
 def test_ask_rejects_a_malformed_body_with_422(client_for, body):
     with client_for(GOOD_ENV) as client:
         assert client.post("/ask", json=body).status_code == 422
+
+
+def sse_frames(text):
+    """The (event name, parsed data) of each frame, requiring the exact two-line frame format."""
+    frames = []
+    for raw in text.split("\n\n")[:-1]:
+        name_line, data_line = raw.split("\n")
+        assert name_line.startswith("event: ") and data_line.startswith("data: ")
+        frames.append((name_line[7:], json.loads(data_line[6:])))
+    assert text.endswith("\n\n")
+    return frames
+
+
+def trace(kind):
+    return TraceEvent(stage="plan", kind=kind, data={"n": 1}, elapsed=0.5)
+
+
+def test_the_stream_sends_each_trace_event_in_order_then_the_answer(client_for, fakes):
+    async def script(emit):
+        emit(trace("from_the_loop"))
+        await asyncio.to_thread(emit, trace("from_a_thread"))
+
+    fakes.script = script
+    with client_for(GOOD_ENV) as client:
+        response = client.post("/ask/stream", json={"question": "q"})
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert response.headers["cache-control"] == "no-cache"
+    assert response.headers["x-accel-buffering"] == "no"
+    frames = sse_frames(response.text)
+    assert [name for name, _ in frames] == ["trace", "trace", "answer"]
+    assert [data["kind"] for _, data in frames[:2]] == ["from_the_loop", "from_a_thread"]
+    assert set(frames[0][1]) == {"stage", "kind", "data", "elapsed"}
+    assert frames[-1][1] == FAKE_RESPONSE.model_dump(mode="json")
+
+
+def test_a_pipeline_error_in_the_stream_is_a_last_error_frame_with_the_stage_and_no_key(client_for, fakes):
+    async def script(emit):
+        emit(trace("before_the_failure"))
+
+    fakes.script = script
+    fakes.pipeline_error = PipelineError("review", f"rejected key {KEY}")
+    with client_for(GOOD_ENV) as client:
+        response = client.post("/ask/stream", json={"question": "q"})
+    assert response.status_code == 200
+    frames = sse_frames(response.text)
+    assert [name for name, _ in frames] == ["trace", "error"]
+    assert frames[-1][1] == {"error": "pipeline", "stage": "review", "detail": "review: rejected key [key removed]"}
+    assert KEY not in response.text
+
+
+def test_any_other_exception_in_the_stream_is_an_internal_error_frame_with_no_key(client_for, fakes):
+    fakes.pipeline_error = ValueError(f"bad {KEY}")
+    with client_for(GOOD_ENV) as client:
+        response = client.post("/ask/stream", json={"question": "q"})
+    assert sse_frames(response.text) == [("error", {"error": "internal", "detail": "ValueError: bad [key removed]"})]
+    assert KEY not in response.text
+
+
+def test_the_stream_is_503_for_a_config_error_and_for_a_failed_index_build(client_for, fakes):
+    with client_for(BAD_ENV) as client:
+        config = client.post("/ask/stream", json={"question": "q"})
+    assert config.status_code == 503
+    assert config.json()["error"] == "configuration"
+    assert {p["variable"] for p in config.json()["config_problems"]} == set(GOOD_ENV)
+    fakes.fail_first = 8  # the startup build and the rebuild this request starts
+    with client_for(GOOD_ENV) as client:
+        wait_for_index(client, "failed")
+        index = client.post("/ask/stream", json={"question": "q"})
+    assert index.status_code == 503
+    assert index.json()["error"] == "index" and "embedding call failed" in index.json()["detail"]
+    assert KEY not in index.text
+
+
+@pytest.mark.parametrize("body", [{}, {"question": ""}, {"question": 5}, {"q": "x"}])
+def test_the_stream_rejects_a_malformed_body_with_422(client_for, body):
+    with client_for(GOOD_ENV) as client:
+        assert client.post("/ask/stream", json=body).status_code == 422
 
 
 def test_root_serves_the_page_and_its_assets(client_for):

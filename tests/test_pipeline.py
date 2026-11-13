@@ -125,6 +125,41 @@ def test_happy_path_cites_the_file_and_ends_with_the_disclaimer():
     assert r.usage.requests == sum(u.requests for u in r.usage.by_role.values())
 
 
+def at(events, stage, kind):
+    return next(i for i, e in enumerate(events) if (e.stage, e.kind) == (stage, kind))
+
+
+def test_the_plan_the_draft_and_the_review_each_emit_one_event_inside_their_stage():
+    events = []
+    worker, _ = researcher(WARFARIN_SECTION)
+    run(scripted(PLAN)[0], worker, scripted(ONLY_GOOD)[0], scripted(supported(1))[0], events.append)
+    assert [e.kind for e in events if e.kind in {"planned", "drafted", "reviewed"}] == ["planned", "drafted", "reviewed"]
+    planned = events[at(events, "plan", "planned")]
+    assert planned.data == {
+        "in_scope": True,
+        "reason": PLAN.reason,
+        "sub_questions": [{"text": PLAN.sub_questions[0].text, "drugs": ["warfarin"]}],
+    }
+    assert at(events, "plan", "started") < at(events, "plan", "planned") < at(events, "plan", "finished")
+    assert at(events, "write", "started") < at(events, "write", "drafted") < at(events, "write", "finished")
+    assert events[at(events, "write", "drafted")].data == {"claims": 1}
+    assert at(events, "review", "started") < at(events, "review", "reviewed")
+    assert events[at(events, "review", "reviewed")].data == {"supported": 1, "ambiguous": 0, "unsupported": 0, "unmarked": 0}
+
+
+def test_the_retry_stage_emits_drafted_and_the_second_review_counts_the_final_verdicts():
+    events = []
+    worker, _ = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
+    writer, _ = scripted(BOTH, ONLY_GOOD)
+    critic, _ = scripted(supported(2), supported(1))
+    run(scripted(PLAN)[0], worker, writer, critic, events.append)  # the quote check fails claim 2 in round one
+    first, second = [e for e in events if e.kind == "reviewed"]
+    assert first.data == {"supported": 1, "ambiguous": 0, "unsupported": 1, "unmarked": 0}
+    assert second.data["unsupported"] == 0
+    assert at(events, "retry", "started") < at(events, "retry", "drafted") < at(events, "retry", "finished")
+    assert events[at(events, "retry", "drafted")].data == {"claims": 1}
+
+
 def test_a_planted_quote_is_caught_without_the_critic_and_redacted_after_one_retry():
     worker, runs = researcher(WARFARIN_SECTION, APIXABAN_SECTION)
     writer, writes = scripted(BOTH, BOTH, "Warfarin has contraindications [1].")
@@ -207,8 +242,10 @@ def test_an_out_of_scope_question_gets_a_refusal_and_calls_nobody_else():
     worker, runs = researcher()
     writer, writes = scripted(ONLY_GOOD)
     critic, reviews = scripted(supported(1))
-    r = run(scripted(refuse)[0], worker, writer, critic)
+    events = []
+    r = run(scripted(refuse)[0], worker, writer, critic, events.append)
     assert (runs, writes, reviews) == ([], [], [])
+    assert events[at(events, "plan", "planned")].data == {"in_scope": False, "reason": refuse.reason, "sub_questions": []}
     assert "cooking" in r.answer and r.answer.endswith(DISCLAIMER)
     assert r.sources == [] and r.critic.review_rounds == 0 and r.tool_calls == []
 

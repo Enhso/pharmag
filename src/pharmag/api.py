@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 from contextlib import asynccontextmanager, suppress
@@ -6,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -131,3 +132,49 @@ async def ask(body: Question):
             {"error": "pipeline", "stage": exc.stage, "detail": _scrub(str(exc), config.api_key)},
             status_code=502,
         )
+
+
+def _frame(name: str, data: str) -> str:
+    return f"event: {name}\ndata: {data}\n\n"
+
+
+@app.post("/ask/stream")
+async def ask_stream(body: Question):
+    """Same checks as /ask, then server-sent events: trace*, then one answer or one error."""
+    config = app.state.config
+    if not isinstance(config, Settings):
+        return JSONResponse(
+            {"error": "configuration", "config_problems": _problems()}, status_code=503
+        )
+    try:
+        engine = await app.state.build.engine()
+    except IndexUnavailable as exc:
+        return JSONResponse({"error": "index", "detail": str(exc)}, status_code=503)
+
+    async def frames():
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue = asyncio.Queue()
+        # emit can run in a worker thread (the synchronous research tools).
+        task = asyncio.create_task(
+            answer(body.question, engine, lambda e: loop.call_soon_threadsafe(queue.put_nowait, e))
+        )
+        task.add_done_callback(lambda _: queue.put_nowait(None))  # queued after every event emitted before the end
+        try:
+            while (event := await queue.get()) is not None:
+                yield _frame("trace", event.model_dump_json())
+            try:
+                yield _frame("answer", task.result().model_dump_json())
+            except PipelineError as exc:
+                error = {"error": "pipeline", "stage": exc.stage, "detail": _scrub(str(exc), config.api_key)}
+                yield _frame("error", json.dumps(error))
+            except Exception as exc:
+                detail = _scrub(f"{type(exc).__name__}: {exc}", config.api_key)
+                yield _frame("error", json.dumps({"error": "internal", "detail": detail}))
+        finally:
+            task.cancel()  # a client that disconnects stops the model spend; the shielded engine build is not this task
+
+    return StreamingResponse(
+        frames(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
