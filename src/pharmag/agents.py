@@ -75,7 +75,10 @@ contiguous sub-span of it. Kind fact means one passage states the claim. Kind sy
 combines passages, and it then cites each of them. Calling two differently worded items "shared" or "the same" \
 is a synthesis.
 
-A statement that the documents lack some information carries no marker. A personal question gets the label's \
+Answer with what the passages say. Leave out remarks about what a document does not contain, how it is \
+organized, or what kind of statement a passage is, such as "the monograph has no formal contraindications list": \
+no passage states such a thing, so the reviewer rejects it. The one exception: when the findings report that the \
+documents lack the drug or the fact the question asks for, say so in one sentence with no marker. A personal question gets the label's \
 facts and no personal instruction, because the documents cannot judge one person's case. When the question's \
 wording or units differ from the label's, give the label's wording and say which reading you applied.
 
