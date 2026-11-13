@@ -103,7 +103,9 @@ V12 (events emitted off the event loop) is closed: the stream hands them over wi
 - Say in each brief that commit messages end with the session link line, and carry no co-author line.
 - Builders write files with the Write tool and run one command per call inside a worktree.
 - After a merge, remove the worktree with `git worktree remove` and delete the branch.
-- Before each commit, scan the staged diff for the key and the proxy hostname. Push after each verified step (DEC-020).
+- Before each push, scan everything the push will send (`git log -p origin/main..HEAD`) for the key and the proxy hostname. A scan of the staged diff alone misses a commit that a builder made and the main session merged: this session pushed the builder's commit that way, and an auditor's later scan of it was clean. Push after each verified step (DEC-020).
 - The owner's plan has a usage limit. Check the working tree before redoing a builder's work, and keep live runs to what a decision needs.
 - Tracked docs stay free of the proxy hostname and of the brief's own text. The four public questions are the one exception (DEC-027).
 - A full-page browser capture repeats a pinned footer in the middle of the image. Grow the viewport to the document's height and capture the viewport.
+- An agent's final report can fail to arrive: the finish reviewer went idle twice without delivering one. Ask in each brief for the report by message to the main session as well.
+- A fresh agent read this session's trail for actions outside the brief and passed it with six low findings. The owner's report of 2026-11-13 lists them.

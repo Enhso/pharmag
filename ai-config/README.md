@@ -26,7 +26,7 @@ The plugin registry lists pstack 0.9.135 as installed. The first session loaded 
 
 | Server | Used for | First used |
 |---|---|---|
-| context7 | Current PydanticAI 2.0 docs, read before the architecture sketch. Current DeepEval docs, read before the eval step. Current uv and FastAPI docs, read by the builder subagent before the skeleton. Current bm25s and openai SDK docs, read by the builder subagent before the index. On 2026-11-12, current PydanticAI 2.67 docs, read by the planning session before the type contract and by the builders before the agents and the output validator | 2026-11-11 |
+| context7 | Current PydanticAI 2.0 docs, read before the architecture sketch. Current DeepEval docs, read before the eval step. Current uv and FastAPI docs, read by the builder subagent before the skeleton. Current bm25s and openai SDK docs, read by the builder subagent before the index. On 2026-11-12, current PydanticAI 2.67 docs, read by the planning session before the type contract and by the builders before the agents and the output validator. On 2026-11-13, current FastAPI docs on server-sent events, read by the builder before the stream endpoint | 2026-11-11 |
 
 The sessions also used tools that are neither skills nor MCP servers: Claude Code's built-in web search, Docker, `curl`, and Claude Code's Artifact tool, which published the presentation overview as a private page.
 
