@@ -1,5 +1,5 @@
 ---
-name: Pharmacology research assistant
+name: PharmAg
 description: A white page where the question is the page. One text field, then a four-step trace, then a cited answer typeset like a medicine leaflet.
 colors:
   ground: "#ffffff"
@@ -89,7 +89,7 @@ components:
     typography: "{typography.step}"
 ---
 
-# Design System: Pharmacology research assistant
+# Design System: PharmAg
 
 ## Overview
 

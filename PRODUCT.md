@@ -39,7 +39,7 @@ Every claim carries a verbatim quote that code has found in the cited passage, a
 
 - The owner's direction, binding: "blank pharmaceutical / high-end cosmetic", "serious, clinical, quiet, precise — like high-end apothecary packaging or a well-typeset medical information leaflet, never a hospital portal or startup landing page."
 - System sans-serif only, with monospace for file and tool names. Near-black on white. One muted accent at most. No cards, gradients, or decorative lines.
-- The name in the page's header is "PharmAg". The browser tab title is "Pharmacology research assistant".
+- The product's name is "PharmAg". The page's header and its browser tab title both say so.
 
 ## Evidence on Hand
 
