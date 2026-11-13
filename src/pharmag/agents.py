@@ -7,7 +7,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from pharmag.config import Settings
-from pharmag.grounding import dangling_markers
+from pharmag.grounding import dangling_markers, quote_occurs
 from pharmag.models import Chunk, Draft, Findings, Plan, Review, ToolCall, ToolHit
 from pharmag.tools import ToolResult, Tools
 
@@ -158,6 +158,24 @@ def _writer_markers_have_claims(ctx: RunContext[None], output: Draft) -> Draft:
         raise ModelRetry(
             f"The answer cites markers {dangling} but the claims list has only {claims} claims. "
             "Add the missing claims or correct the markers."
+        )
+    return output
+
+
+@worker.output_validator
+def _worker_quotes_occur(ctx: RunContext[WorkerDeps], output: Findings) -> Findings:
+    bad = [
+        f
+        for f in output.findings
+        if (chunk := ctx.deps.evidence.get(f.chunk_id)) is None or not quote_occurs(f.quote, chunk.text)
+    ]
+    # On the last allowed retry the findings go through; stage 4 marks the claims that cite them.
+    if bad and ctx.retry < ctx.max_retries:
+        listed = "; ".join(f"{f.chunk_id}: {f.quote[:80]!r}" for f in bad[:3])
+        raise ModelRetry(
+            f"These quotes do not occur in the passage they cite: {listed}. Copy one contiguous span of the "
+            "passage text word for word. A section heading is not part of the passage text. A quote cannot skip "
+            "words or list items. Use the chunk_id exactly as the tool printed it."
         )
     return output
 
