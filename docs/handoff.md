@@ -1,82 +1,64 @@
 # Handoff
 
-Rewritten on 2026-11-13 at the end of the third working session, which checked readiness and fixed what the checks found. The next session is the design session. Rewrite this file before that session stops.
+Rewritten on 2026-11-13 at the end of the design session, which built the streaming endpoint and the page. Rewrite this file before the next session stops.
 
 The deadline is 2026-11-13 at 23:59 Casablanca time. That is 23:59 UTC: the machine's time zone data has Morocco on UTC+0 today. The graders assess the last commit pushed before it.
 
 ## Where things stand
 
-`main` is pushed and is the fallback submission. It meets the brief's hard constraints H1 to H12. 120 tests pass with no network (`uv run --locked pytest -q`).
+`main` is pushed and is the submission as it stands. It meets the brief's hard constraints H1 to H12. 132 tests pass with no network (`uv run --locked pytest -q`).
 
-Checked this session, before any change: a clone of the public repo with no credentials builds and answers, and the key and the proxy host are in no tracked file and no commit.
+Built this session (DEC-037):
 
-Six fixes then went in (DEC-033), each with a test that fails without it:
+- **`POST /ask/stream`.** Server-sent events: one `trace` frame per pipeline event, then one `answer` frame equal to the `/ask` body, or one `error` frame with the stage. `/ask` is unchanged. The pipeline emits three new events: `planned`, `drafted`, `reviewed`. A client that disconnects cancels the run.
+- **The page** (`src/pharmag/static/`). An empty page with one large question field and the four public questions as samples. After a question is sent: the question as a header, four step rows (Plan, Retrieve, Write, Review) fed live by the stream, the cited answer, the cautions, the sources with their quotes, and the disclaimer pinned to the bottom. No build step and nothing from another host.
 
-- The quote check compares whole words and whole numbers in order. It ignores punctuation, Markdown marks, and case, and it no longer accepts "5 mg" inside "0.5 mg".
-- A worker gets a failing quote back inside its own call.
-- The critic sees each cited passage's section heading.
-- The writer's prompt rules out remarks on what a document lacks or how it is organized.
-- A failed second review, or a failed redaction call, ships the draft in hand.
-- The token usage lines reach the container log.
+Checked on the container rebuilt from this tree:
 
-One run of the eleven eval questions against the rebuilt container, compared with the last run before the fixes:
+| Check | Result |
+|---|---|
+| The four public questions, asked through the page in Chrome | All four answered: 29.9, 56.4, 68.5, and 10.8 seconds |
+| Hosts the browser contacted during those runs | One, the container itself |
+| Console errors or warnings | None |
+| `curl -N` on `/ask/stream` with the out-of-scope question | Three `trace` frames, then the `answer` frame |
+| Eight scripted behaviours at 1440 and 390 pixels wide | All pass, no horizontal overflow |
+| Esc during a run | The server cancels the run; the question stays in the field, selected |
 
-| Measure | Before | After |
-|---|---|---|
-| 200 with every expected source | 11 of 11 | 11 of 11 |
-| Claims removed | 3 | 0 |
-| Questions that took the retry round | 5 | 1 |
-| Median seconds | 29 | 29 |
-| Slowest, seconds | 99 | 59 |
-
-Each side is one run per question, and the variance between runs is large.
+The working, failed, caution, and cancel states were checked through the real endpoint with a replayed pipeline, not with live model runs. Only Chrome on Linux was used.
 
 ## Read these first
 
 | File | Why |
 |---|---|
 | `CLAUDE.md` | The working agreement. The owner decides, and every ruling is logged |
-| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-036. Do not reopen a ruling |
+| `docs/decisions.md` | The authority on what is decided, DEC-001 to DEC-037. Do not reopen a ruling |
 | `docs/architecture.md` | The design of the core, matching what is built |
 | `src/pharmag/models.py` | `AskResponse` and `TraceEvent`, the two shapes the page reads |
-| `src/pharmag/static/` | The page as it is: `index.html`, `app.js`, `style.css` |
-| `defense-brief.md` | Private and gitignored. Evidence E1 to E16. Add to it with every decision and measurement |
+| `PRODUCT.md` | Who the page is for and what it must show |
+| `.impeccable/surfaces/src-pharmag-static-index-html.md` | The page's brief and its direction: palette, type, states |
+| `defense-brief.md` | Private and gitignored. Evidence E1 to E18. Add to it with every decision and measurement |
 | `ai-config/README.md` | Manifest of skills, MCP servers, agents, and plugins. Add a row when a session first uses one |
-
-## The design session, in order
-
-The rulings are DEC-012 (a streaming endpoint feeds the page, and `/ask` stays plain JSON) and DEC-013 (a static page with every asset vendored, and the `impeccable` skill for the design pass). Each step names its check.
-
-1. **`POST /ask/stream`.** Same body as `/ask`. The response is `text/event-stream`: one `data:` line of JSON per `TraceEvent`, then one last event that holds the full `AskResponse`, or an error with the stage and the detail.
-   - `pipeline.answer(question, engine, emit)` already calls `emit` for each event.
-   - Three of the four tools are synchronous, so the framework runs them in worker threads and `emit` is called off the event loop. Hand each event to an `asyncio.Queue` with `loop.call_soon_threadsafe`.
-   - A config error and a failed index build answer 503 before the stream starts. A `PipelineError` after that becomes the error event, because the status is already 200.
-   - Events that exist today: `started` and `finished` for each stage (`plan`, `research`, `write`, `quote_check`, `review`, `retry`, `redact`, `respond`), and `tool_call` with the worker's sub-question, the tool, its arguments, and its hits. No event carries the plan or the verdicts. Add one if the page should show the plan before the answer exists.
-   - Check: a test with a scripted engine that asserts the order of the events and the last payload, then `curl -N` against the container.
-2. **The page.** It shows progress per stage while the user waits (answers took 2 to 59 seconds in the last run), then the answer, the cautions, the sources with file, section, lines, and quote, and the trace (plan, tool calls, critic) folded away.
-   - The `answer` string already ends with the cautions, a numbered source list, and the disclaimer as plain text, for a reader of the API. Decide whether the page prints `answer` whole or builds those parts from `citations`, `critic.cautions`, and `disclaimer`. It must not show them twice.
-   - No build step and no file from another host. The test for property 12 fails on any reference to another host.
-   - `/favicon.ico` returns 404 today.
-3. **The design pass** with the `impeccable` skill. Copy the skill into `ai-config/` and add its row to the manifest when it is first used.
-4. **Check on the real artifact.** Rebuild the container, open the page in a real browser, ask the four public questions, and confirm that no request goes to another host. `uv run --no-project --with playwright python <script>` with `channel="chrome"` drives the installed Chrome without a project dependency.
 
 ## How to run things
 
-- Container: `docker build -t agent . && docker run -p 8000:8000 --env-file .env agent`. A container named `pharmag-poc` already runs the current `main` on port 8000. Remove it with `docker rm -f pharmag-poc` before starting another on that port.
-- Eleven questions against a running server: `python3 evals/live_check.py http://localhost:8000 <out_dir>`. It saves each response and prints one line per question with the missing and extra sources, the review rounds, and the tokens.
+- Container: `docker build -t agent . && docker run -p 8000:8000 --env-file .env agent`. A container named `pharmag-poc` runs the current `main` on port 8000. Remove it with `docker rm -f pharmag-poc` before starting another on that port.
+- Eleven questions against a running server: `python3 evals/live_check.py http://localhost:8000 <out_dir>`.
 - Anything live outside the container: `uv run --locked --env-file .env ...`. The config check is strict (DEC-014), so a quoted or misspelled variable makes `/ask` return 503.
-- To see why a retry round fired, run `pipeline.answer` in a script that wraps `pipeline._check` and prints the verdicts and the unmarked statements of each round.
+- A browser check without a project dependency: `uv run --no-project --with playwright python <script>` with `channel="chrome"`.
+- To see the page's states without spending tokens, start the real app with `pharmag.api.answer` and `pharmag.api.build_engine` replaced by a replay of a saved `/ask` body. This session's replay server and capture scripts were in the session scratchpad and are not in the repo.
 
 ## What waits on the owner
 
 Each item has a date the owner is as likely to miss as to meet.
 
-1. **The new and changed properties.** `tests/PROPERTIES.md` restates property 25 and adds 59 to 66. The owner's rule is to confirm each one. By 2026-11-13, 12:00.
-2. **The time cap per request (DEC-012).** No cap is set. The slowest answers are now slow in the research stage, which a cap on the retry round would not shorten. The model client's own timeout is 600 seconds per call. Recommended: a timeout of 60 seconds per model call, and no retry round once 60 seconds have passed. By 2026-11-13, 12:00.
-3. **One more fix for P3.** No run so far states that the warfarin label names sertraline's drug class in its interaction table (section 7.3). `find_interactions` returns that passage, and the tool's output does not tell the worker which terms matched in it. Recommended: print the matched terms with each passage, then run P3 three times. By 2026-11-13, 12:00.
-4. **The rehearsal and the summary email** are the owner's own tasks. Rehearse against a timer by 2026-11-13, 19:00. Send the email with the repo link by 2026-11-13, 21:30.
+1. **The new properties.** `tests/PROPERTIES.md` adds 67 to 75 (the stream, the three new events, and two on the page). Property 25 as restated and 59 to 66 from the session before also wait. The owner's rule is to confirm each one. By 2026-11-13, 14:00.
+2. **The assistant's choices in DEC-037.** A third new event (`drafted`), retrieval and tool use shown as one row, and no table rendering, dark theme, or fallback from the stream to `/ask`. Each stands unless the owner vetoes it. By 2026-11-13, 14:00.
+3. **The fourth sample question** ends "and what is the threshold" with no question mark, because the public question is tracked that way (DEC-027). Keep it word for word, or complete it on the page. By 2026-11-13, 14:00.
+4. **The time cap per request (DEC-012).** No cap is set. P3 took 68.5 seconds today, 54 of them in retrieval. Recommended: a timeout of 60 seconds per model call, and no retry round once 60 seconds have passed. By 2026-11-13, 15:00.
+5. **One more fix for P3.** No run so far states that the warfarin label names sertraline's drug class in its interaction table (section 7.3). Recommended: print the matched terms with each passage `find_interactions` returns, then run P3 three times. By 2026-11-13, 15:00.
+6. **The rehearsal and the summary email** are the owner's own tasks. Rehearse against a timer by 2026-11-13, 19:00. Send the email with the repo link by 2026-11-13, 21:30.
 
-## After the design session
+## Next steps
 
 1. **Answer eval with DeepEval (DEC-015).** `evals/live_check.py` compares sources only. Add key-fact coverage, the DeepEval metrics, latency, and tokens per question. The expected answers are confirmed (DEC-034). Check: a results file, the limits of each number stated beside it, and the numbers in the README.
 2. **Submission polish.** The presentation outline, a draft of the summary email, a secret scan of the whole tree, a clean clone that builds and answers, and this file rewritten as a note on the state at submission.
@@ -86,20 +68,27 @@ Each item has a date the owner is as likely to miss as to meet.
 
 | ID | Finding | Status |
 |---|---|---|
-| V12 | `emit` is called off the event loop by the synchronous tools | Open. Step 1 above handles it |
-| V13 | A marker written as a range, such as `[1-3]`, is not read as a marker | Documented limit (DEC-034). No saved answer shows one |
+| V13 | A marker written as a range, such as `[1-3]`, is not read as a marker | Documented limit (DEC-034). The page prints such a marker as plain text |
 | V14 | A redactor that renumbers markers would attach a sentence to the wrong source | Documented limit (DEC-034). The prompt forbids it |
+| V15 | The cancel on disconnect in `/ask/stream` has no automated test | Open, low. The test client cannot drop a connection mid-stream. Checked by hand through the page |
+| V16 | The page was checked in Chrome on Linux only | Open. No Safari, Firefox, or real phone |
+| V17 | The stream sends no keep-alive between events | Open, low. The longest silent stretch seen was about 20 seconds, the write stage. A proxy with a shorter idle timeout would cut the stream; none sits in front of the container |
 | Tests | Two behaviours have no test: the cache-drop warning, and the `asyncio.shield` around the engine build | Open, low |
 
-V8 (how strict the quote check is) and V11 (the usage lines) are closed by DEC-033.
+V12 (events emitted off the event loop) is closed: the stream hands them over with `call_soon_threadsafe`, and a test emits from a worker thread.
 
 ## Facts the code does not show
 
+- **The page reads `answer` and cuts its tail.** `answer` ends with the cautions, the source list, and the disclaimer as plain text for API readers. The page builds those parts from `critic.cautions`, `citations`, and `disclaimer`, and removes the tail by its headings (`Sources:`, `Cautions:`). A change to `_answer_text` in `pipeline.py` needs the same change in `proseOf` in `app.js`.
+- **Review time on the page** is the sum of `quote_check`, `review`, `retry`, and `redact` from `timings`. Tool calls of the retry round are listed under Retrieve as a follow-up.
+- **The test for property 12 reads every file in the static folder as text** and fails on `http://`, `https://`, or `//` followed by a letter. So the favicon is an inline SVG with its slashes percent-encoded, a binary file in that folder would break the test, and a JavaScript comment needs a space after `//`.
+- **The page test for the label** looks for the exact string `<label for="question">`, so that tag carries no class.
 - **What started the retry round before the fixes.** In 15 traced answers, 7 took it. The causes recorded were a quote that failed on punctuation, a writer's remark about what a document lacks, and the critic not seeing a section heading. Where the critic's flags were recorded, none was an unsupported medical statement.
 - **Quotes of two words are real.** "Malignant hypertension" is a whole list item, so the quote check has no minimum length.
-- **Sources vary between runs.** C5 cited both aspirin files in three runs and only the MedlinePlus file in a fourth. P2 often cites `medlineplus-apixaban.md` beside the two labels. P3 now cites the two MedlinePlus files as well.
+- **Sources vary between runs.** C5 cited both aspirin files in three runs and only the MedlinePlus file in a fourth. P2 often cites `medlineplus-apixaban.md` beside the two labels. P3 cites `medlineplus-warfarin.md` as well.
 - **`lookup_glossary` was not called** in any of the eleven eval questions. A question about a glossary term does cite `GLOSSARY.md`.
 - **PydanticAI 2.67.** A run-level `output_type` is refused on an agent that has output validators, which is why the redaction has its own agent. Inside an output validator, `ctx.retry` counts the rejections so far and `ctx.max_retries` is the budget.
+- **FastAPI 0.162.** Its built-in server-sent-event response works only when the route itself is a generator, which cannot answer 503 before the stream starts. The stream endpoint uses `StreamingResponse` and writes the frames itself.
 - **The proxy reports cached input tokens on some calls only.** The log warns when a role's cache hit rate falls by more than 0.25.
 - **`GLOSSARY.md` uses Windows line ends.** The parser drops them.
 - **A flaky property test can be a false property.** Ask whether the property is true before changing code.
@@ -114,3 +103,4 @@ V8 (how strict the quote check is) and V11 (the usage lines) are closed by DEC-0
 - Before each commit, scan the staged diff for the key and the proxy hostname. Push after each verified step (DEC-020).
 - The owner's plan has a usage limit. Check the working tree before redoing a builder's work, and keep live runs to what a decision needs.
 - Tracked docs stay free of the proxy hostname and of the brief's own text. The four public questions are the one exception (DEC-027).
+- A full-page browser capture repeats a pinned footer in the middle of the image. Grow the viewport to the document's height and capture the viewport.

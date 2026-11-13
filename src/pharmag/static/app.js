@@ -26,6 +26,8 @@ const SPOKEN = {
   retry: "Second review round.",
 };
 const VERDICT = { supported: "Supported", ambiguous: "Caution", unsupported: "Removed" };
+// A failed stage, named the way the rows name it.
+const FAILED = { plan: "planning", research: "retrieval", write: "writing", quote_check: "review", review: "review", retry: "review", redact: "review" };
 
 let view = "empty"; // empty | working | answered | failed
 let hasAnswer = false; // a finished answer is still on the page, behind the question field
@@ -157,14 +159,15 @@ function onTrace({ stage, kind, data }) {
   else if (kind === "tool_call") showCalls(run.calls.push(data) && run.calls, run.plan);
   else if (kind === "drafted") setSum("write", count(data.claims, "claim") + (stage === "retry" ? ", revised" : ""));
   else if (kind === "reviewed") {
-    run.reviewed = [
-      `${data.supported} supported`,
-      data.ambiguous && `${data.ambiguous} with a caution`,
-      data.unsupported && `${data.unsupported} unsupported`,
-      data.unmarked && `${data.unmarked} without a marker`,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    run.reviewed =
+      [
+        data.supported && `${data.supported} supported`,
+        data.ambiguous && `${data.ambiguous} with a caution`,
+        data.unsupported && `${data.unsupported} unsupported`,
+        data.unmarked && `${data.unmarked} without a marker`,
+      ]
+        .filter(Boolean)
+        .join(", ") || "No claim to review";
     setSum("review", run.reviewed);
   }
 }
@@ -223,13 +226,14 @@ function showCalls(calls, plan) {
 function showReview(response) {
   const critic = response.critic;
   const tally = (status) => critic.verdicts.filter((v) => v.status === status).length;
-  setSum(
-    "review",
-    `${tally("supported")} supported`,
-    critic.cautions.length ? [" · ", el("span", { class: "flag" }, count(critic.cautions.length, "caution"))] : "",
-    critic.removed.length ? ` · ${critic.removed.length} removed` : "",
-    critic.review_rounds > 1 ? ` · ${critic.review_rounds} rounds` : "",
-  );
+  // Only the counts that are not zero: "1 caution" reads better than "0 supported, 1 caution".
+  const parts = [
+    tally("supported") > 0 && `${tally("supported")} supported`,
+    critic.cautions.length > 0 && el("span", { class: "flag" }, count(critic.cautions.length, "caution")),
+    critic.removed.length > 0 && `${critic.removed.length} removed`,
+    critic.review_rounds > 1 && `${critic.review_rounds} rounds`,
+  ].filter(Boolean);
+  setSum("review", parts.length ? parts.map((part, i) => [i ? " · " : "", part]) : "No claim to review");
   const kept = new Map(response.citations.map((c) => [c.marker, c.claim]));
   const removed = [...critic.removed]; // in the order of the unsupported verdicts
   put(
@@ -415,6 +419,12 @@ function showAnswer(response) {
   for (const c of response.citations) if (!cited.has(c.marker)) cited.set(c.marker, c);
   const cautioned = new Set(critic.cautions.map((c) => c.marker));
   put($("prose"), blocks(proseOf(response), cited, cautioned));
+  const gone = critic.verdicts.filter((v) => v.status === "unsupported").map((v) => v.claim);
+  $("removed").hidden = !gone.length;
+  $("removed").textContent =
+    gone.length === 1
+      ? `Claim ${gone[0]} was drafted and then removed: it did not pass the check against its cited passage. The Review step has the reason.`
+      : `Claims ${gone.slice(0, -1).join(", ")} and ${gone.at(-1)} were drafted and then removed: they did not pass the check against their cited passages. The Review step has the reasons.`;
   $("cautions").hidden = !critic.cautions.length;
   put(
     $("cautions").querySelector("ul"),
@@ -435,23 +445,26 @@ function showAnswer(response) {
 
 // Failure
 
-function fail({ what, why, items }) {
+function fail({ what, why, items, raw }) {
   stopClock();
   for (const [name, row] of Object.entries(rows)) {
     if (row.li.dataset.state !== "active") continue;
     setState(name, "failed");
     setSum(name, "Did not finish");
   }
+  // Rows that never started say nothing about a request the server turned away.
+  $("steps").hidden = Object.values(rows).every((row) => row.li.dataset.state === "pending");
   put(
     problem,
     el("p", { class: "what" }, what),
     why && el("p", { class: "why" }, why),
     items && el("ul", {}, items.map((item) => el("li", {}, item))),
     el("button", { type: "button", class: "link" }, "Try again"),
+    raw && el("details", {}, el("summary", {}, "Technical detail"), el("code", {}, raw)),
   );
   problem.hidden = false;
   setView("failed");
-  problem.querySelector("button").focus({ preventScroll: true });
+  problem.focus({ preventScroll: true });
 }
 
 async function refusalOf(response) {
@@ -463,8 +476,10 @@ async function refusalOf(response) {
       items: body.config_problems.map((p) => [el("code", {}, p.variable), ` ${p.problem}`]),
     };
   }
-  if (body?.error === "index") return { what: "The documents could not be indexed.", why: body.detail };
-  return { what: `The request failed (HTTP ${response.status}).` };
+  if (body?.error === "index") {
+    return { what: "The documents could not be indexed, so the server cannot answer yet.", why: "Trying again starts the indexing again.", raw: body.detail };
+  }
+  return { what: `The server turned the request away (HTTP ${response.status}).`, why: "Your question is kept. Try again." };
 }
 
 // Request
@@ -492,6 +507,7 @@ async function ask(question) {
   hasAnswer = false;
   stopClock();
   resetSteps();
+  $("steps").hidden = false;
   answer.hidden = true;
   problem.hidden = true;
   $("asked").textContent = question;
@@ -510,16 +526,16 @@ async function ask(question) {
       if (name === "trace") onTrace(data);
       else if (name === "answer") return showAnswer(data);
       else if (name === "error") {
-        return fail(
-          data.error === "pipeline"
-            ? { what: `The answer failed at the ${data.stage.replace("_", " ")} stage.`, why: data.detail }
-            : { what: "The server hit an unexpected error.", why: data.detail },
-        );
+        return fail({
+          what: data.error === "pipeline" ? `The ${FAILED[data.stage] ?? data.stage} step failed, so there is no answer.` : "The server hit an unexpected error, so there is no answer.",
+          why: "Your question is kept. Try again, or go back and change it.",
+          raw: data.detail,
+        });
       }
     }
-    fail({ what: "The connection closed before the answer arrived." });
+    fail({ what: "The connection closed before the answer arrived.", why: "Your question is kept. Try again." });
   } catch {
-    if (!mine.signal.aborted) fail({ what: "Could not reach the server." });
+    if (!mine.signal.aborted) fail({ what: "Could not reach the server.", why: "Check that the container is running, then try again." });
   }
 }
 
@@ -588,3 +604,5 @@ answer.addEventListener("click", (event) => {
 });
 
 fit();
+// The caret opens the page where a pointer can hover. On a touch screen it would raise the keyboard over the samples.
+if (matchMedia("(hover: hover)").matches) input.focus();
