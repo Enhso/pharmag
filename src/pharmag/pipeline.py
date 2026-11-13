@@ -210,7 +210,11 @@ async def _check(req: _Request, draft: Draft) -> tuple[list[ClaimVerdict], list[
         failed = failed_claims(draft, req.evidence)
     async with req.stage("review"):
         cited = dict.fromkeys(c.chunk_id for claim in draft.claims for c in claim.citations)
-        passages = "\n\n".join(f"--- {cid}\n{req.evidence[cid].text}" for cid in cited if cid in req.evidence)
+        passages = "\n\n".join(
+            f"--- {cid} | section: {_section_path(req.evidence[cid])}\n{req.evidence[cid].text}"
+            for cid in cited
+            if cid in req.evidence
+        )
         review = await req.run(
             "critic",
             critic,

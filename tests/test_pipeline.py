@@ -193,6 +193,15 @@ def test_a_worker_that_keeps_a_bad_quote_still_returns_and_stage_four_marks_the_
     assert [x.text for x in r.critic.removed] == [GOOD.text]
 
 
+def test_the_critic_sees_the_section_heading_path_of_each_cited_passage():
+    worker, _ = researcher(WARFARIN_SECTION)
+    critic, reviews = scripted(supported(1))
+    run(scripted(PLAN)[0], worker, scripted(ONLY_GOOD)[0], critic)
+    prompt = str(reviews[0][0].parts[-1].content)
+    assert WARFARIN.section_path != "(preamble)"
+    assert f"--- {WARFARIN.chunk_id} | section: {WARFARIN.section_path}\n" in prompt
+
+
 def test_an_out_of_scope_question_gets_a_refusal_and_calls_nobody_else():
     refuse = Plan(in_scope=False, reason="The question is about cooking.", sub_questions=[])
     worker, runs = researcher()
