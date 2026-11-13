@@ -1,0 +1,2758 @@
+ ▐▛███▛█   Claude Code v2.1.322
+▝▜██████▀  Fable 5.2 · Claude Pro
+ ▝▝   ▝▝   ~/applications/sntx/work-test/pharmag
+
+
+❯ /model fable                                                                  
+  ⎿  Set model to Fable 5.2 and saved as your default for new sessions
+
+❯ /effort xhigh                                                                 
+  ⎿  Set effort level to xhigh (saved as your default for new sessions): Deeper
+     reasoning than high, just below maximum (on supported models)
+
+❯ hello and welcome to this work-test assignment for an [redacted: personal detail] at syntax.   
+  our first step is to scope the problem and brainstorm possible things to      
+  implement. you, fable, are responsible for the high-level planning and        
+  various subagents will take care of the mechanical work. first, don't make    
+  any assumptions before confirming them with me. second, i want to work with   
+  the most performant and cutting-edge tools available, within the task's       
+  constraints. third, every decision i make must be logged in an appropriate    
+  file (and a private defense-brief.md should also be created iteratively to    
+  put me in the best position to defend the project in front of the hiring      
+  team). one more thing, every time you use a skill or mcp, copy it into the    
+  repo (it's mentioned in the instructions). if we have to make our own, so be  
+  it.                                                                           
+                                                                                
+  a few things come to mind (but you can pinpoint other potential things to     
+  look out for, and also disagree):                                             
+  - tool design: avoid "toy tool" cliché, tools must be useful for the case     
+  - chunking / indexing strategy: avoid naive fixed-size chunking               
+  - in-memory vector search: keep it in-memory, not in-database                 
+  - critic topology: linear vs. cyclic self-correction                          
+  - agent orchestration framework selection: transparent data flow              
+  - frontend: single-port, zero-build-step ui (here we can use /impeccable to   
+  polish the design)                                                            
+  - litellm and docker runtime robustness                                       
+                                                                                
+  before any proposal:                                                          
+  - read the full assignment pdf carefully (./docs/assignment-pharma.pdf)       
+  - inspect the provided corpus files (./corpus/)                               
+  - extract hard requirements vs soft preferences                               
+  - list evaluation questions and expected source files (we can add a few of    
+  our own evals)                                                                
+                                                                                
+  we should come out of this a scoping doc covering: hard constraints           
+  checklist, open decisions where we have a choice with ranked options and a    
+  rationale for each, risks / gotchas not already listed, proposed first steps  
+  once scoping is approved.                                                     
+                                                                                
+  no code yet. no long speculative architecture yet. scope + decisions first.   
+                                                                                
+  with that being said, let's get started!                                      
+
+● I'll start with the source material: the assignment PDF and the corpus, before
+  proposing anything.
+
+● Bash(ls -la && echo "--- GIT ---" && git status --short | head -30 && git log
+      --oneline | head -10 && echo "--- DOCS ---" && ls -la docs && echo "---
+      CORPUS ---" &&…)
+  ⎿  total 40
+     drwxrwxr-x 5 the owner the owner 4096 Nov 11 11:02 .
+     drwxrwxr-x 3 the owner the owner 4096 Nov 11 11:15 ..
+     … +58 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(echo "--- .env (keys; secrets masked) ---" && sed -E
+      's/^([A-Za-z_]*(KEY|SECRET|TOKEN)[A-Za-z_]*)=.*/\1=<masked>/' .env && echo
+      && echo "--- README ---" && cat…)
+  ⎿  --- .env (keys; secrets masked) ---
+     OPENAI_API_KEY=<masked>
+     OPENAI_BASE_UR='https://[redacted: proxy host]'
+     … +60 lines (ctrl+o to expand)
+
+  Read 3 files (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag/corpus && for f in
+      dailymed-warfarin.md dailymed-apixaban.md; do echo "=== $f ==="; grep -nE
+      '^#{1,5} ' "$f"…)
+  ⎿  === dailymed-warfarin.md ===
+     1:# Warfarin (DailyMed label)
+     5:## WARNING: BLEEDING RISK
+     … +130 lines (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag/corpus && for f in
+      dailymed-metformin.md dailymed-sertraline.md medlineplus-warfarin.md; do
+      echo "=== $f ==="…)
+  ⎿  === dailymed-metformin.md ===
+     1:# Metformin (DailyMed label)
+     5:## WARNING: LACTIC ACIDOSIS
+     … +173 lines (ctrl+o to expand)
+
+● I've read the full assignment PDF and mapped the corpus structure, and I'm now
+  reading the passages the four public questions depend on before checking the
+  runtime gotchas I spotted in .env. · summary
+
+● Bash(echo "=== WARFARIN §4 (127-146) ===" && sed -n '127,146p'
+      dailymed-warfarin.md | cut -c1-600 && echo "=== WARFARIN §2.4 (91-96) ==="
+      && sed -n '91,96p' dailymed…)
+  ⎿  === WARFARIN §4 (127-146) ===
+     ## 4 CONTRAINDICATIONS
+     … +68 lines (ctrl+o to expand)
+
+● Bash(echo "=== SERTRALINE §5.3 (102-107) ===" && sed -n '102,107p'
+      dailymed-sertraline.md | cut -c1-900 && echo "=== SERTRALINE §7.1
+      (322-359), 500 chars/line ===" &…)
+  ⎿  === SERTRALINE §5.3 (102-107) ===
+     ### 5.3 Increased Risk of Bleeding
+     … +121 lines (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag && echo "--- remote
+      ---" && git remote -v && git branch -a && echo "--- license ---" && head
+      -3 LICENSE && ec…)
+  ⎿  --- remote ---
+     origin  git@github.com:Enhso/pharmag.git (fetch)
+     origin  git@github.com:Enhso/pharmag.git (push)
+     … +22 lines (ctrl+o to expand)
+
+● Checking one runtime fact locally: how the graders' exact docker run 
+  --env-file .env command treats the quoted values in the provided .env.
+
+● Bash(docker run --rm --network none --env-file .env python:3.12-slim python -c
+      '
+      import os…)
+  ⎿  OPENAI_BASE_UR = "'https://[redacted: proxy host]'"
+     OPENAI_BASE_URL = None
+     OPENAI_MODEL = "'[redacted: chat model]'"
+     … +3 lines (ctrl+o to expand)
+
+● Skill(pstack:poteto-mode)
+  ⎿  Successfully loaded skill
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(KEY=$(grep '^OPENAI_API_KEY=' .env | cut -d= -f2- | tr -d "'\"") &&
+      BASE=$(grep '^OPENAI_BASE_UR=' .env | cut -d= -f2- | tr -d "'\"") && echo
+      "--- GET /v1/model…)
+  ⎿  --- GET /v1/models ---
+     http=200
+     [redacted: proxy detail]
+     … +426 lines (ctrl+o to expand)
+
+● Web Search(""[redacted: chat model]" OpenAI model")
+  ⎿  Did 1 search in 8s
+
+● Web Search("Pydantic AI latest release notes November 2026 agent framework
+            version")
+  ⎿  Did 1 search in 8s
+
+● Web Search("LangGraph latest release November 2026 version changelog")  ⎿  Did 1 search in 6s
+
+● Status: the proxy answered. The key can see a large model catalog. I'm reading
+  the key's budget and the capability flags for the two models named in .env,
+  then I'll write up.
+
+● Bash(F=~/.claude/projects/~-applications-sntx-work-test-ph
+      armag/0be698aa-996c-4dc6-b9bb-92255565895d/tool-results/b5gdsyi1l.txt;
+      echo "--- key in…)
+  ⎿  --- key info ---
+     4:--- GET /key/info (selected fields only) ---
+     5-keys: ['detail']
+     … +59 lines (ctrl+o to expand)
+
+● Status: all fact-finding is done (assignment, corpus, Docker behavior, proxy
+  catalog). Checking the licenses of the skills I've loaded before I ask you
+  where copies should go.
+
+● Bash(P=~/.claude/plugins/cache/pstack-claude/pstack/0.9.134; echo
+      "--- pstack root ---"; ls "$P" | head -30; echo "--- license files ---";
+      find "$P" -maxde…)
+  ⎿  --- pstack root ---
+     LICENSE
+     README.md
+     … +98 lines (ctrl+o to expand)
+
+  Read 1 file (ctrl+o to expand)
+
+● User answered Claude's questions:
+  ⎿  · The repo will be public, and the assignment PDF is marked 'Proprietary 
+     and Confidential'. Where should the scoping doc, the decision log and the 
+     private defense brief live? → Docs public, brief private (Recommended)
+     · The assignment asks you to push your AI coding configuration. How should 
+     I copy each skill and MCP server I use into the repo? (So far: pstack's 
+     poteto-mode, unslop and technical-writing skills, MIT licensed. No MCP 
+     server yet.) → Inert ai-config/ folder (Recommended)
+     · Beyond the skills and MCP servers I use, which parts of your personal AI 
+     setup should also go into the public repo? I recommend the first three, 
+     because they are what steers the agents. → Agents and model routing, Plugin
+     and hook manifest, Project-level CLAUDE.md + anonymize the others
+     · I ran the graders' exact 'docker run --env-file .env' with the provided 
+     .env. The values arrive with literal single quotes, and the base URL 
+     variable is named OPENAI_BASE_UR (missing L), so a standard OpenAI client 
+     fails inside the container. Is this .env exactly as Syntax sent it? → Yes, 
+     untouched
+
+● User answered Claude's questions:
+  ⎿  · You answered 'Project-level CLAUDE.md + anonymize the others'. Which of 
+     these do you mean? → New root file + anonymized copies (Recommended)
+
+● Bash(python3 -I - <<'EOF'
+      import json, os…)
+  ⎿  plugin: bootloops-protocols@bootloops | version: 1.0.0 | scope: user
+     plugin: bootloops-research@bootloops | version: 1.0.0 | scope: user
+     plugin: claude-hud@claude-hud | version: 0.15.3 | scope: user
+     … +61 lines (ctrl+o to expand)
+
+  Read 2 files (ctrl+o to expand)
+
+● Your answers are in, and I'm now reading the hidden maintenance comments in
+  your two CLAUDE.md files before copying anything public. After that I'll write
+  the scoping doc, decision log, defense brief and ai-config/. · summary
+
+● Bash(echo "=== ~/.claude/CLAUDE.md: line count + comment blocks ==="; wc -l
+      ~/.claude/CLAUDE.md; grep -n -E '<!--|-->'
+      ~/.claude/CLAUDE.md; echo…)
+  ⎿  === ~/.claude/CLAUDE.md: line count + comment blocks ===
+     108 ~/.claude/CLAUDE.md
+     82:<!-- Source: Anthropic, "Which Claude model should you build with?"
+     … +39 lines (ctrl+o to expand)
+
+● Skill(writing-for-agents)
+  ⎿  Successfully loaded skill
+
+● Bash(mkdir -p ai-config/skills/pstack ai-config/agents &&
+      P=~/.claude/plugins/cache/pstack-claude/pstack/0.9.134 && cp -r
+      "$P/skills/poteto-mode" "$P/skill…)
+  ⎿  --- personal strings left in ai-config (expect none) ---
+     --- anonymized lines ---
+     ai-config/CLAUDE.global.md:101:Maintenance notes for the owner. Block
+     … +23 lines (ctrl+o to expand)
+
+● Status: copies are in ai-config/ with no personal strings left. Now checking
+  the origin of the writing-for-agents skill I just used, then writing the four
+  documents.
+
+● Bash(S=~/.claude/skills/writing-for-agents; echo "--- skill dir
+      ---"; ls -la "$S"; echo "--- is it a symlink / where from ---"; readlink
+      -f "$S"; ls /home/…)
+  ⎿  --- skill dir ---
+     total 24
+     drwxr-xr-x  2 the owner the owner  4096 Sep 30 10:30 .
+     … +48 lines (ctrl+o to expand)
+
+● Update(.gitignore)
+  ⎿  Added 4 lines
+      218  
+      219  # Streamlit
+      220  .streamlit/secrets.toml
+      221 +                                                              
+      222 +# Assignment brief (marked confidential) and private interview
+          + notes                                                        
+      223 +docs/assignment-pharma.pdf                                    
+      224 +defense-brief.md                                              
+
+● Write(CLAUDE.md)
+  ⎿  Wrote 15 lines to CLAUDE.md
+       1 # pharmag
+       2 
+       3 A work-test submission. `docs/scoping.md` holds the assignment's
+          constraints and the open decisions.
+       4 
+       5 ## Working agreement
+       6 
+       7 - The owner decides. State each assumption and get the owner's c
+         onfirmation before you act on it. Settle a fact by running a che
+         ck, and a preference by asking.
+     … +8 lines (ctrl+o to expand)
+
+● Web Search("mattpocock skills GitHub repository license "writing-for-agents"")
+  ⎿  Did 1 search in 7s
+
+● Write(docs/scoping.md)
+  ⎿  Wrote 325 lines to docs/scoping.md
+      1 # Scoping: pharmacology research agent
+      2 
+      3 Status: draft for the owner's rulings, written 2026-11-11. No cod
+        e exists yet. Each ruling goes into the [decision log](decisions.
+        md).
+      4 
+      5 ## What the brief asks for
+      6 
+      7 Build a Python agent that answers compound pharmacology questions
+         from the 21 files in `corpus/`. For each question the agent plan
+     … +319 lines (~29 KB) (ctrl+o to expand)
+
+● Status: docs/scoping.md is written. Writing the decision log, the private
+  defense brief and the ai-config manifest now, then a final ignore-rule check.
+
+● Write(docs/decisions.md)
+  ⎿  Wrote 45 lines to docs/decisions.md
+      1 # Decision log
+      2 
+      3 This file records each decision the owner makes, on the day the o
+        wner makes it. Open decisions and their options are in the [scopi
+        ng document](scoping.md). An entry quotes the owner's own reason 
+        when the owner gave one. Where the owner accepted a recommendatio
+        n without comment, the entry gives the reason that came with the 
+        recommendation and says so.
+      4 
+      5 ## 2026-11-11
+     … +40 lines (ctrl+o to expand)
+
+● Write(defense-brief.md)
+  ⎿  Wrote 91 lines to defense-brief.md
+      1 [redacted: private notes]
+      2 
+      3 [redacted: private notes]
+        [redacted: private notes]
+        [redacted: private notes]
+        [redacted: private notes]
+      4 
+      5 [redacted: private notes]
+      6 
+      7 [redacted: private notes]
+     … +84 lines (ctrl+o to expand)
+
+● Bash(mkdir -p ai-config/skills/mattpocock && cp -r
+      ~/.claude/skills/writing-for-agents ai-config/skills/mattpocock/
+      && echo "--- file counts ---" && echo "…)
+  ⎿  --- file counts ---
+     ai-config total (before README): 91
+     81 ai-config/skills/pstack/poteto-mode
+     … +20 lines (ctrl+o to expand)
+● Write(ai-config/README.md)
+  ⎿  Wrote 63 lines to ai-config/README.md
+      1 # AI coding configuration
+      2 
+      3 This folder holds the AI coding configuration behind this repo, a
+        s the assignment requests. Claude Code does not load this folder.
+         The files are copies for review, not live configuration. The one
+         live file is `CLAUDE.md` at the repo root.
+      4 
+      5 The work runs in Claude Code. The planning session uses Claude Fa
+        ble 5.2 at the `xhigh` effort setting.
+      6 
+     … +57 lines (ctrl+o to expand)
+
+● Update(docs/scoping.md)
+  ⎿  Added 1 line, removed 1 line
+      300  | R8 | Citation grading. A file name that is not exact, or an 
+           extra file cited out of habit, may cost points | Read (p. 4). 
+           The grading method is unknown | `sources` lists exact file nam
+           es, and only for passages that support a claim |
+      301  | R9 | One model writes and criticizes, so errors correlate | 
+           Follows from I4 | The quote check in code. The critic sees cla
+           ims and evidence only |
+      302  | R10 | Confidential material in a public repo: the brief, the
+            env file, the proxy address | Read (the brief's footer) | Ign
+           ore rules for git and Docker. Tracked docs paraphrase |
+      303 -| R11 | The repo holds third-party skill files, and the brief 
+          -holds the candidate accountable for every line | 89 files unde
+          -r `ai-config/` | The manifest states origin and license for ea
+          -ch item |                                                     
+      303 +| R11 | The repo holds third-party skill files, and the brief 
+          +holds the candidate accountable for every line | 86 files unde
+          +r `ai-config/skills/` (`find ai-config/skills -type f \| wc -l
+          +`) | The manifest states origin and license for each item |   
+      304  | R12 | A reviewer may build on Apple Silicon | Unknown | Depe
+           ndencies with arm64 wheels only |
+      305  | R13 | Startup depends on the proxy if embeddings are compute
+           d at start | Follows from I3 | Retries with backoff. `/health`
+            reports ready only when the index exists |
+      306  | R14 | Questions that ask for personal medical direction, or 
+           that carry instructions for the model | Inferred | Scope rules
+            and candidates C6 and C7 |
+
+● Bash(echo "third-party skill files: $(find ai-config/skills -type f | wc -l) |
+      ai-config total: $(find ai-config -type f | wc -l)" && wc -l CLAUDE.md
+      docs/scoping.md…)
+  ⎿  third-party skill files: 86 | ai-config total: 92
+        15 CLAUDE.md
+       325 docs/scoping.md
+     … +49 lines (ctrl+o to expand)
+
+● You want a submission you can defend file by file, so this pass pins down what
+  the brief requires and which choices are yours before any code exists.
+  Nothing is committed or pushed, and the scoping doc now waits on your rulings.
+
+  What exists now
+
+  - docs/scoping.md is the scoping doc. It holds the hard-constraints checklist,
+    the four public questions with expected sources and the lines where each
+    answer sits, seven candidate questions of our own, twelve open decisions
+    with ranked options, the risks, and the first steps.
+  - docs/decisions.md logs the four decisions you made today.
+  - defense-brief.md is gitignored. It holds the evidence and the panel
+    questions I can already answer.
+  - ai-config/ holds copies of the four skills I used, your agent definitions
+    and model routing, and a manifest.
+  - CLAUDE.md at the repo root carries your working rules for later sessions and
+    subagents.
+  - .gitignore now excludes the assignment PDF, because its footer marks it
+    confidential.
+
+  Findings that change the plan
+
+  - The provided .env fails under the graders' own command. I ran docker run 
+    --env-file .env in a throwaway container. Every value arrives wrapped in
+    literal single quotes, and the base URL variable is named OPENAI_BASE_UR.
+    The brief's own sample client would get no base URL and a quoted key.
+  - The grading environment is not ours. The graders inject their own values, so
+    only the chat model and embedding model named in the environment are safe
+    to depend on.
+  - The run command decides three things. Only port 8000 is published, so the
+    API must serve the UI. No volume is mounted, so the corpus ships in the
+    image. The build has no credentials, so embeddings cannot be computed at
+    build time.
+  - The corpus has three label formats. Tables are flattened into pipe-separated
+    lines. The apixaban contraindications section says "ELIQUIS" and never
+    "apixaban". The warfarin label names sertraline only in a table row under
+    its drug class.
+  - The brief contradicts itself. It promises five questions and lists four, and
+    the fourth stops mid-sentence.
+  - The proxy lists [redacted: proxy detail] models. I queried its model list and metadata, with no
+    completion call and no tokens spent. The key's budget and rate limits are
+    unreadable.
+
+  Decisions waiting on you
+
+  ┌─────┬────────────┬──────────────────────────────────────────────────────┐
+  │ ID  │  Decision  │                My first-ranked option                │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D1  │ Framework  │ PydanticAI 2.x, with LangGraph a close second        │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D2  │ Agent      │ Typed plan, then a tool-calling loop, then a critic  │
+  │     │ shape      │                                                      │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D3  │ Critic     │ Bounded cycle with one retry, plus a quote check in  │
+  │     │            │ code                                                 │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D4  │ Chunking   │ Heading-tree chunks with a metadata header,          │
+  │     │            │ fixed-size kept only as a measured baseline          │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D5  │ Retrieval  │ Exact NumPy scan plus in-memory BM25, fused by rank  │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D6  │ Tools      │ search_corpus, get_section, find_interactions,       │
+  │     │            │ lookup_glossary                                      │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D7  │ Models     │ One chat model from the environment, through Chat    │
+  │     │            │ Completions                                          │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D8  │ /ask       │ Rich JSON with answer, exact sources, citations, and │
+  │     │ contract   │  the trace                                           │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D9  │ Frontend   │ Static page served at /, all assets vendored         │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D10 │ Config     │ Tolerate the quoted values and the misspelled        │
+  │     │            │ variable name                                        │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D11 │ Evals      │ In-repo eval set and one script that reports the     │
+  │     │            │ numbers                                              │
+  ├─────┼────────────┼──────────────────────────────────────────────────────┤
+  │ D12 │ Host       │ GitLab as the submitted repo                         │
+  └─────┴────────────┴──────────────────────────────────────────────────────┘
+
+  Where I disagree with your list
+
+  - Vector search. At several hundred chunks, the most performant choice is an
+    exact scan. An approximate index library adds error and no speed.
+  - Tools. A numeric helper for the eGFR question is the toy-tool pattern, so I
+    left it out. The brief does not say whether retrieval counts as one of the
+    two tools, so my recommended set has three besides search.
+  - Critic. I rank cyclic first, but capped at one retry. The larger gain is the
+    quote check in code, which makes grounding testable.
+  - Missing from your list. I added the /ask response contract, the eval
+    harness, the model strategy, and the repo host.
+
+  Your tasks
+
+  1. Rule on D1 to D12 and pick which candidate questions to adopt. P50:
+     November 11.
+  2. Email the recruitment contact three questions: which response fields the
+     graders read, the time limit per request, and whether their env file has
+     the same names and quoting. P50: November 11.
+  3. Create the GitLab project if you choose it. P50: November 12.
+
+  Check before the first push
+
+  - License. The writing-for-agents skill is MIT according to secondary sources
+    only. I did not see the upstream LICENSE file.
+  - Anonymized copies. The two CLAUDE.md copies have your name and home paths
+    replaced. They still contain your maintenance comment blocks, which mention
+    [redacted: personal detail] and ~/snags.md.
+  - Third-party files. ai-config/skills/ holds 86 files you did not write, 81 of
+    them from poteto-mode.
+
+  Not checked: no completion or embedding call was made, so latency, parameter
+  handling, and the content filter on the sertraline boxed warning are untested.
+  The UTC deadline (22:59 on November 13) assumes Morocco is on UTC+1, and the
+  candidate sources marked "to verify" are unread.
+
+  Sources:
+  - [redacted: chat model], Azure AI catalog
+  - What is [redacted: chat model], eesel.ai
+  - [redacted: chat model], Amazon Bedrock model card
+  - [redacted: chat model], OpenRouter
+  - Pydantic AI changelog
+  - pydantic-ai 2.14.0 on newreleases.io
+  - langgraph 1.1.7 on newreleases.io
+  - AI Skills for Real Engineers, aihero.dev
+  - writing-for-agents on skills.sh
+  ⎿  Stop says: ⏱ 26m 24s (finished 13:03:21)
+
+✻ Brewed for 19m 17s · done Wednesday 12:03
+
+❯ 1. d1 option 1; d2 option 2; d3 option 1; d4 option 1 with the suggested      
+  baseline; d5 option 1; d5a option 1; d5b option 1; d6 start with set 1,       
+  augment if evals show the need; option 2; d8 option 1 with the recommended    
+  rulings; d9 option 1; d10 option 2, okay for defaults; d11 option 2; d12 i    
+  work with github, don't want to go through the hassle of opening a new        
+  account and setting things up. extra questions: all of them.                  
+  2. sending an email looks good but it introduces a hurdle. i don't have a lot 
+  of time to complete this, so we'll make some assumptions: grader reads        
+  everything, no time limit but tests should be run to estimate the time cost   
+  of each of our runs (if time permits), .env should be parsed for the required 
+  fields and raise an error if something's off.                                 
+  3. no gitlab.                                                                 
+
+● Logging these now. Two of your rulings need a quick confirmation before I act
+  on them, because one has a consequence you may not intend and one names two
+  libraries. I'm also checking the one open license flag while you answer.
+
+● web-fetch(Confirm upstream skill license) Haiku 5.5
+  ⎿  Done (2 tool uses · 8.8k tokens · 7s)
+  (ctrl+o to expand)
+
+● User answered Claude's questions:
+  ⎿  · Your D10 ruling (strict config) has a consequence. The .env that Syntax 
+     sent has quoted values and the variable OPENAI_BASE_UR. If the app treats 
+     those as errors, the graders' exact docker command fails with that file. 
+     How strict should the config check be? → Correct the current `.env`. Fully 
+     strict, stay up.
+     · Your D11 ruling (option 2) adds a metrics library to the eval script. 
+     Which library? Both are development-only dependencies and stay out of the 
+     Docker image. My knowledge of both is from mid-2026, so I read current docs
+     for the one you pick before wiring it. → DeepEval (Recommended)
+     · The scoping is ruled. How far should I go before I come back to you? → 
+     Skeleton, then architecture review (Recommended)
+     · How should commits and pushes work? The repo is public and the graders 
+     assess the last pushed commit. Commit messages carry no co-author lines. 
+     The harness asks me to end each message with a 'Claude-Session:' link line,
+     which I include unless you object in a note. → Commit and push each step
+
+› Message from web-fetch
+  License check for mattpocock/skills: the license is MIT, confirmed from the
+  license text itself.
+
+  - License name: MIT License
+  - Copyright line, exactly as written: "Copyright (c) 2026 Matt Pocock"
+  - URL read: https://raw.githubusercontent.com/mattpocock/skills/main/LICENSE
+  (HTTP 200, text/plain, 1068 characters). The fallback page was not needed.
+  - The standard MIT permission and warranty text follows the copyright line. It
+  contains no extra conditions or modifications.
+
+  Writing-for-agents skill: I did not check. The only page I fetched was the
+  LICENSE file, and it says nothing about the repository's contents. I did not
+  fetch the repository page or browse the tree, so I cannot confirm whether
+  SKILL.md for writing-for-agents exists there.
+
+  Note that the license covers the repository as a whole. Confirming the MIT
+  grant applies to SKILL.md specifically would take the file's own header or a
+  repo-level notice, which I did not read.
+
+● Recorded. The license check came back clean: the upstream mattpocock/skills
+  LICENSE file is MIT. Now logging all rulings, correcting .env, and updating
+  the docs before the first commit.
+
+● Write(docs/decisions.md)
+  ⎿  Added 96 lines, removed 15 lines
+      1  # Decision log
+      2  
+      3 -This file records each decision the owner makes, on the day the 
+        -owner makes it. Open decisions and their options are in the [sco
+        -ping document](scoping.md). An entry quotes the owner's own reas
+        -on when the owner gave one. Where the owner accepted a recommend
+        -ation without comment, the entry gives the reason that came with
+        - the recommendation and says so.                                
+      3 +This file records each decision the owner makes, on the day the 
+        +owner makes it. The options behind each ruling are in the [scopi
+        +ng document](scoping.md). An entry quotes the owner's own reason
+        + when the owner gave one. Where the owner accepted a recommendat
+        +ion without comment, the entry gives the reason that came with t
+        +he recommendation and says so. Where the owner ruled against the
+        + recommendation without comment, the entry says that too.       
+      4  
+      5 -## 2026-11-11                                                   
+      5 +## 2026-11-11, working setup                                    
+      6  
+      7  ### DEC-001. Working agreement
+      8  
+     ...
+       26  - **Decision.** Beyond used skills and MCP servers, the repo p
+           ublishes the `builder` and `verifier` agent definitions, the m
+           odel routing file, a manifest of the plugins and hooks active 
+           in the sessions, a new `CLAUDE.md` at the repo root, and copie
+           s of the owner's two personal CLAUDE.md files with the owner's
+            name and home paths removed.
+       27  - **Owner's words.** "Project-level CLAUDE.md + anonymize the 
+           others." A follow-up question confirmed the reading above.
+       28  
+       29 -### Facts the owner confirmed                                 
+       29 +### Fact the owner confirmed                                  
+       30  
+       31 -- The provided `.env` file is exactly as Syntax sent it. This 
+          -fact feeds risk R1 and decision D10 in the scoping document.  
+       31 +The provided `.env` file is exactly as Syntax sent it. This fa
+          +ct feeds risk R1 and DEC-014.                                 
+       32  
+       33 -### Leanings the owner stated, not yet ruled                  
+       33 +## 2026-11-11, rulings on the scoping decisions               
+       34  
+       35 -The owner listed these positions at kickoff and invited disagr
+          -eement. Each one is an open decision in the scoping document. 
+       35 +Decision IDs D1 to D12 refer to the scoping document.         
+       36  
+       37 -| Leaning | Open decision |                                   
+       38 -|---|---|                                                     
+       39 -| Tools must be useful for the case, not toy tools | D6 |     
+       40 -| No naive fixed-size chunking | D4 |                         
+       41 -| Vector search stays in memory, not in a database | D5 |     
+       42 -| Critic topology is a choice between linear and cyclic self-c
+          -orrection | D3 |                                              
+       43 -| The orchestration framework must keep the data flow transpar
+          -ent | D1 |                                                    
+       44 -| The frontend uses a single port and no build step, with a de
+          -sign pass through the `impeccable` skill | D9 |               
+       45 -| LiteLLM and Docker runtime robustness need attention | D7, D
+          -10 |                                                          
+       37 +### DEC-005. Framework (D1): PydanticAI 2.x                   
+       38 +                                                              
+       39 +- **Rejected.** LangGraph 1.x, a hand-written loop on the Open
+          +AI SDK, the OpenAI Agents SDK.                                
+       40 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: typed inputs and outputs, a small dependenc
+          +y tree, and LLM calls that a debugger can step through.       
+       41 +                                                              
+       42 +### DEC-006. Agent shape (D2): parallel workers               
+       43 +                                                              
+       44 +- **Decision.** One call returns a typed plan. Each sub-questi
+          +on runs in its own tool-calling loop at the same time. One cal
+          +l merges the results. The critic then judges the draft.       
+       45 +- **Rejected.** The same stages run as one sequential loop, wh
+          +ich was the recommendation. One loop that writes its plan as t
+          +ext.                                                          
+       46 +- **Reason.** The owner gave none. The owner accepts the costs
+          + the scoping document lists: more tokens, concurrency to reaso
+          +n about, and a trace per worker.                              
+       47 +                                                              
+       48 +### DEC-007. Critic (D3): bounded cycle                       
+       49 +                                                              
+       50 +- **Decision.** The critic returns a verdict per claim with th
+          +e evidence it checked. An unsupported claim sends the agent ba
+          +ck once. After that round, the answer ships with the remaining
+          + flags shown. Before the LLM critic runs, code checks each cla
+          +im's quote against the chunk it cites.                        
+       51 +- **Rejected.** Linear with repair in code. Linear, flag only.
+          + Loop until the critic passes.                                
+       52 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: the critic can close a gap and not only rep
+          +ort it, and the round limit caps latency.                     
+       53 +                                                              
+       54 +### DEC-008. Chunking (D4): heading-tree chunks               
+       55 +                                                              
+       56 +- **Decision.** Chunks follow the heading tree and carry a met
+          +adata header. Fixed-size windows with overlap stay in the eval
+          + harness as the measured baseline.                            
+       57 +- **Rejected.** LLM-written context per chunk, embedding-simil
+          +arity chunking, late chunking.                                
+       58 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: the split matches how the labels are writte
+          +n, costs no LLM calls, and is deterministic.                  
+       59 +                                                              
+       60 +### DEC-009. Retrieval (D5, D5a, D5b): hybrid exact search    
+       61 +                                                              
+       62 +- **Decision.** Dense vectors compared with a NumPy matrix pro
+          +duct, in-memory BM25, reciprocal rank fusion, and metadata fil
+          +ters. No reranker at first, to be revisited when the evals sho
+          +w ranking errors. Embeddings are computed at container start t
+          +hrough the API.                                               
+       63 +- **Rejected.** Dense only. An approximate index library. An e
+          +mbedded vector database. A committed embedding cache. A local 
+          +embedding model.                                              
+       64 +- **Reason.** The owner accepted the recommendations. The reas
+          +on offered with them: exact tokens need BM25, paraphrase needs
+          + dense vectors, and several hundred chunks need no approximate
+          + index.                                                       
+       65 +                                                              
+       66 +### DEC-010. Tools (D6): four tools to start                  
+       67 +                                                              
+       68 +- **Decision.** `search_corpus`, `get_section`, `find_interact
+          +ions`, and `lookup_glossary`. `resolve_reference` and `list_do
+          +cuments` join if the evals show the need. No numeric helper.  
+       69 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: each tool answers a question shape that sim
+          +ilarity search handles badly.                                 
+       70 +                                                              
+       71 +### DEC-011. Models (D7): per-role overrides                  
+       72 +                                                              
+       73 +- **Decision.** Each role reads an optional model override tha
+          +t defaults to `OPENAI_MODEL`. Calls use the Chat Completions A
+          +PI.                                                           
+       74 +- **Rejected.** One model for every role with no overrides, wh
+          +ich was the recommendation. Hardcoded model names.            
+       75 +- **Reason.** The owner gave none.                            
+       76 +- **Note.** The owner's message gave this ruling as "option 2"
+          + in the D7 position without the label. The assistant stated th
+          +at reading back to the owner.                                 
+       77 +                                                              
+       78 +### DEC-012. Response contract (D8): rich JSON                
+       79 +                                                              
+       80 +- **Decision.** `/ask` returns `answer`, `sources`, `citations
+          +`, `plan`, `tool_calls`, `critic`, `disclaimer`, timings, and 
+          +token counts. `/ask` stays plain JSON, and a second streaming 
+          +endpoint feeds the UI. A time cap per request is set after mea
+          +surement. A malformed body gets a standard 4xx code, and every
+          + well-formed question gets 200, refusals included. Code append
+          +s the disclaimer.                                             
+       81 +- **Rejected.** Minimal JSON with `answer` only.              
+       82 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: extra fields cost nothing, and the UI and t
+          +he presentation use the trace.                                
+       83 +                                                              
+       84 +### DEC-013. Frontend (D9): static page                       
+       85 +                                                              
+       86 +- **Decision.** Static HTML, CSS, and JavaScript served by the
+          + API at `/`, with every asset vendored. The `impeccable` skill
+          + handles the design pass.                                     
+       87 +- **Rejected.** HTMX fragments. Gradio, Streamlit, or Chainlit
+          +. React with a Vite build.                                    
+       88 +- **Reason.** The owner accepted the recommendation. The reaso
+          +n offered with it: no build stage, no Node, and nothing fetche
+          +d at runtime.                                                 
+       89 +                                                              
+       90 +### DEC-014. Config check (D10): fully strict, server stays up
+       91 +                                                              
+       92 +- **Decision.** The app requires `OPENAI_API_KEY`, `OPENAI_BAS
+          +E_URL`, `OPENAI_MODEL`, and `OPENAI_EMBEDDING_MODEL`. A missin
+          +g, empty, quoted, or misspelled variable is a config error. Th
+          +e server still starts. `/health` returns 200, and `/ask` retur
+          +ns an error that names the field. The assistant corrects the l
+          +ocal `.env` so that it passes the check.                      
+       93 +- **Owner's words.** "Correct the current `.env`. Fully strict
+          +, stay up."                                                   
+       94 +- **Rejected.** Normalize the values and then validate, which 
+          +was the recommendation. Strict with an exit at startup.       
+       95 +- **Risk the owner accepted.** If the graders' env file carrie
+          +s the same defects as the file Syntax sent, every `/ask` call 
+          +fails with the config error.                                  
+       96 +- **Defaults confirmed.** `uv` with exact `==` pins and a comm
+          +itted lock file. The newest CPython release for which every pi
+          +nned dependency ships amd64 and arm64 wheels. FastAPI on uvico
+          +rn at `0.0.0.0:8000`. A slim, pinned, multi-stage image with a
+          + non-root user and a `.dockerignore`.                         
+       97 +                                                              
+       98 +### DEC-015. Evaluation harness (D11): eval set plus DeepEval 
+       99 +                                                              
+      100 +- **Decision.** An eval set in the repo and one script that ru
+          +ns it against the live API. DeepEval supplies the metrics as a
+          + development-only dependency that stays out of the image.     
+      101 +- **Rejected.** The eval set with no metrics library, which wa
+          +s the recommendation. Ragas. Four `curl` calls.               
+      102 +- **Reason.** The owner gave none for adding a library. On the
+          + choice of library, the owner accepted the recommendation. The
+          + reason offered with it: agent metrics such as tool correctnes
+          +s, pytest-style runs, and a judge class that can reuse the app
+          +'s own client.                                                
+      103 +                                                              
+      104 +### DEC-016. Repository host (D12): GitHub                    
+      105 +                                                              
+      106 +- **Decision.** The repo stays on GitHub. No GitLab project.  
+      107 +- **Owner's words.** "i work with github, don't want to go thr
+          +ough the hassle of opening a new account and setting things up
+          +."                                                            
+      108 +                                                              
+      109 +### DEC-017. Extra evaluation questions: all seven            
+      110 +                                                              
+      111 +- **Decision.** Candidates C1 to C7 join the eval set. The exp
+          +ected sources of C3 and C5 still need a read of the files.    
+      112 +                                                              
+      113 +### DEC-018. No questions to Syntax                           
+      114 +                                                              
+      115 +- **Decision.** The owner does not email the recruitment conta
+          +ct. The project works on three assumptions. The graders read e
+          +very field of the response. No time limit applies to a request
+          +, and the project measures the time cost of its runs if time p
+          +ermits. The config check follows DEC-014.                     
+      116 +- **Owner's words.** "sending an email looks good but it intro
+          +duces a hurdle. i don't have a lot of time to complete this, s
+          +o we'll make some assumptions."                               
+      117 +                                                              
+      118 +### DEC-019. Order of work                                    
+      119 +                                                              
+      120 +- **Decision.** The assistant commits the docs and config, smo
+          +ke-tests the proxy, and has a subagent build the walking skele
+          +ton. The assistant then shows the owner a one-page architectur
+          +e sketch of the core before any core code.                    
+      121 +- **Rejected.** An architecture sketch with no code first. An 
+          +unattended run to the end.                                    
+      122 +                                                              
+      123 +### DEC-020. Git policy                                       
+      124 +                                                              
+      125 +- **Decision.** The assistant commits and pushes after each ve
+          +rified step. The first push publishes `ai-config/` as it stood
+          + on 2026-11-11. Commit messages carry no co-author lines and e
+          +nd with the session link line that the harness requests.      
+      126 +- **Rejected.** Local commits with a push on the owner's word,
+          + which was the recommendation. No commits by the assistant.   
+
+● Bash(sed -i -E "s/^OPENAI_BASE_UR=/OPENAI_BASE_URL=/;
+      s/^([A-Z_]+)='(.*)'\s*$/\1=\2/; s/^([A-Z_]+)=\"(.*)\"\s*$/\1=\2/" .env &&
+      echo "--- corrected .env (key masked)…)
+  ⎿  --- corrected .env (key masked) ---
+     OPENAI_API_KEY=<masked>
+     OPENAI_BASE_URL=https://[redacted: proxy host]
+     … +18 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      from pathlib import Path…)
+  ⎿  edits applied
+     skills files: 87
+     3:Status: ruled by the owner on 2026-11-11. The [decision log](decisio
+     … +14 lines (ctrl+o to expand)
+
+● Write(defense-brief.md)
+  ⎿  Added 49 lines, removed 34 lines
+       2  
+       3  [redacted: private notes]
+           [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+       4  
+       5 -[redacted: private notes]
+       5 +[redacted: private notes]
+         +[redacted: private notes]
+       6  
+       7  [redacted: private notes]
+       8  
+       9 -[redacted: private notes]
+         -[redacted: private notes]
+       9 +[redacted: private notes]
+      10  
+      11 -[redacted: private notes]
+      12 -[redacted: private notes]
+         -[redacted: private notes]
+      13 -[redacted: private notes]
+      14 -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+      11 +[redacted: private notes]
+      12 +[redacted: private notes]
+         +[redacted: private notes]
+      13 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      14 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+      15  
+      16  [redacted: private notes]
+      17  
+     ...
+      21  
+      22  [redacted: private notes]
+          [redacted: private notes]
+      23  
+      24 -[redacted: private notes]
+         -[redacted: private notes]
+      24 +[redacted: private notes]
+         +[redacted: private notes]
+      25  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      26 -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+      27 -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+      26 +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+      27 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      28 +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+         [redacted: private notes]
+      29  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      30  
+      30 -[redacted: private notes]
+         -[redacted: private notes]
+      31 +[redacted: private notes]
+         +[redacted: private notes]
+      32  [redacted: private notes]
+           [redacted: private notes]
+          [redacted: private notes]
+      33  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      34  [redacted: private notes]
+      35  [redacted: private notes]
+          [redacted: private notes]
+      35 -[redacted: private notes]
+         -[redacted: private notes]
+         -[redacted: private notes]
+      36 -[redacted: private notes]
+         [redacted: private notes]
+         [redacted: private notes]
+      36 +[redacted: private notes]
+         +[redacted: private notes]
+      37 +[redacted: private notes]
+         +[redacted: private notes]
+      38  
+      39  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      40  
+     ...
+       52  
+       53  [redacted: private notes]
+           [redacted: private notes]
+       54  
+       54 -[redacted: private notes]
+       55 +[redacted: private notes]
+       56  
+       56 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       57 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       58  
+       58 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       59 +[redacted: private notes]
+       60 +[redacted: private notes]
+       61 +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       62 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       63 +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       64 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          [redacted: private notes]
+       65 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       66 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       67 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       68 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       69 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       70 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       71 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       72 +[redacted: private notes]
+          +[redacted: private notes]
+       73 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       74  
+       60 -[redacted: private notes]
+          [redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       75 +[redacted: private notes]
+       76  
+       62 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          [redacted: private notes]
+       77 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       78  
+       64 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          [redacted: private notes]
+       79 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       80  
+       66 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       81 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       82  
+       68 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       83 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       84  
+       70 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       85 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       86  
+       72 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          [redacted: private notes]
+       87 +[redacted: private notes]
+       88  
+       74 -[redacted: private notes]
+       75 -                                                              
+       76 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       77 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       78 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       89 +[redacted: private notes]
+          +[redacted: private notes]
+       90 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       91 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       92 +[redacted: private notes]
+          +[redacted: private notes]
+       93  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+       94  
+       81 -[redacted: private notes]
+       95 +[redacted: private notes]
+       96  
+       83 -[redacted: private notes]
+          -[redacted: private notes]
+       84 -[redacted: private notes]
+          -[redacted: private notes]
+       85 -[redacted: private notes]
+          -[redacted: private notes]
+          -[redacted: private notes]
+       86 -[redacted: private notes]
+          -[redacted: private notes]
+          [redacted: private notes]
+       97 +[redacted: private notes]
+          +[redacted: private notes]
+       98 +[redacted: private notes]
+          +[redacted: private notes]
+       99 +[redacted: private notes]
+          +[redacted: private notes]
+      100  [redacted: private notes]
+           [redacted: private notes]
+      101 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      102  
+       89 -[redacted: private notes]
+      103 +[redacted: private notes]
+      104  
+       91 -[redacted: private notes]
+          [redacted: private notes]
+      105 +[redacted: private notes]
+      106 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+
+● Status: rulings are logged (DEC-005 to DEC-020), .env is corrected and
+  verified in a container, docs are updated. Committing and pushing step 1 now,
+  then the proxy smoke test.
+
+● Bash(git add .gitignore CLAUDE.md ai-config corpus docs/decisions.md
+      docs/scoping.md && echo "--- staged summary ---" && git diff --cached
+      --stat | tail -3 && echo "…)
+  ⎿  --- staged summary ---
+      docs/decisions.md                                  | 126 +++
+      docs/scoping.md                                    | 339 ++++++++
+     … +7 lines (ctrl+o to expand)
+
+● Bash(MSG=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be6
+      98aa-996c-4dc6-b9bb-92255565895d/scratchpad/commit-1.txt && cat > "$MSG"
+      <<'EOF'
+      Add sc…)
+  ⎿  51894c7 Add scoping docs, decision log, and AI configuration
+     ba1a29f Initial commit
+     --- push ---
+     … +2 lines (ctrl+o to expand)
+
+● Bash(mkdir -p /tmp/claude-1000/~-applications-sntx-work-test-pharmag
+      /0be698aa-996c-4dc6-b9bb-92255565895d/scratchpad/smoke && cat >
+      /tmp/claude-1000/-home-…)
+  ⎿  {
+       "call": "1 tool call",
+       "status": 200,
+     … +161 lines (ctrl+o to expand)
+
+● Step 1 is pushed (51894c7) and the proxy smoke test passed all seven calls.
+  I'm dispatching a builder subagent for the walking skeleton and drafting the
+  architecture sketch meanwhile. · summary
+
+● builder(Build walking skeleton)
+
+  Called context7 4 times (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      import json, os, re…)  ⎿  ~/.claude.json -> context7 {"type": "http", "url": "https://mcp.contex
+     t7.com/mcp", "headers": {"CONTEXT7_API_KEY": "<masked>"}}
+
+● Write(ai-config/mcp.json)
+  ⎿  Wrote 11 lines to ai-config/mcp.json
+       1 {
+       2   "mcpServers": {
+       3     "context7": {
+       4       "type": "http",
+       5       "url": "https://mcp.context7.com/mcp",
+       6       "headers": {
+       7         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
+       8       }
+       9     }
+      10   }
+     … +1 line (ctrl+o to expand)
+
+● Update(ai-config/README.md)
+  ⎿  Added 5 lines, removed 1 line
+      19  
+      20  ## MCP servers used
+      21  
+      22 -None so far. When a session first uses an MCP server, its entry
+         - goes into `mcp.json` in this folder.                          
+      22 +`mcp.json` in this folder holds the entry for each server, with
+         + credentials replaced by a variable reference.                 
+      23  
+      24 +| Server | Used for | First used |                             
+      25 +|---|---|---|                                                  
+      26 +| context7 | Current PydanticAI 2.0 docs, read before the archi
+         +tecture sketch | 2026-11-11 |                                  
+      27 +                                                               
+      28  The sessions also used tools that are neither skills nor MCP se
+          rvers: Claude Code's built-in web search, Docker, and `curl`.
+      29  
+      30  ## Agents and model routing
+
+● Update(docs/scoping.md)
+  ⎿  Added 1 line, removed 1 line
+      309  |---|---|---|---|
+      310  | R1 | The provided env file breaks the documented run command
+           . Docker passes the quote characters through as part of each v
+           alue, and the base-URL variable name lacks its last letter. A 
+           default OpenAI client then has no base URL and a quoted key | 
+           Verified in a throwaway container. The owner confirms that the
+            file is as Syntax sent it | DEC-014. The check is strict and 
+           the server stays up. The local file is corrected |
+      311  | R2 | The graders' environment can differ in model names, key
+           , and variable names | Read (p. 2, p. 5). Details unknown | I4
+            and I5. A startup check with a clear error |
+      312 -| R3 | The chat model runs on a hosted backend with its own co
+          -ntent filter, which may reject text on self-harm or overdose. 
+          -The sertraline label opens with a boxed warning on suicidality
+          - | Backend read from proxy metadata. Filter behavior untested 
+          -| Smoke-test that passage. Treat a filtered response as a repo
+          -rted error |                                                  
+      312 +| R3 | The chat model runs on a hosted backend with its own co
+          +ntent filter, which may reject text on self-harm or overdose. 
+          +The sertraline label opens with a boxed warning on suicidality
+          + | Backend read from proxy metadata. A smoke test on 2026-11-1
+          +1 sent the boxed warning and got a normal answer (verified, on
+          +e call) | Treat a filtered response as a reported error |     
+      313  | R4 | Latency. A reasoning model inside a plan, a tool loop, 
+           and a critic cycle can take long per question | Inferred. The 
+           graders' timeout is unknown | Round limits, and a time cap set
+            after measurement (DEC-012, DEC-018) |
+      314  | R5 | Reasoning models reject some request parameters, such a
+           s a custom temperature | Inferred from the model family. Untes
+           ted on this proxy | Send minimal parameters. Smoke test |
+      315  | R6 | The key's budget and rate limits are unknown | The prox
+           y declined the key-info query (verified) | Cache LLM and embed
+           ding responses during development |
+
+● Update(docs/scoping.md)
+  ⎿  Added 1 line, removed 1 line
+      311  | R2 | The graders' environment can differ in model names, key
+           , and variable names | Read (p. 2, p. 5). Details unknown | I4
+            and I5. A startup check with a clear error |
+      312  | R3 | The chat model runs on a hosted backend with its own co
+           ntent filter, which may reject text on self-harm or overdose. 
+           The sertraline label opens with a boxed warning on suicidality
+            | Backend read from proxy metadata. A smoke test on 2026-11-1
+           1 sent the boxed warning and got a normal answer (verified, on
+           e call) | Treat a filtered response as a reported error |
+      313  | R4 | Latency. A reasoning model inside a plan, a tool loop, 
+           and a critic cycle can take long per question | Inferred. The 
+           graders' timeout is unknown | Round limits, and a time cap set
+            after measurement (DEC-012, DEC-018) |
+      314 -| R5 | Reasoning models reject some request parameters, such a
+          -s a custom temperature | Inferred from the model family. Untes
+          -ted on this proxy | Send minimal parameters. Smoke test |     
+      314 +| R5 | Reasoning models reject some request parameters, such a
+          +s a custom temperature | Inferred from the model family. A smo
+          +ke test on 2026-11-11 with temperature 0 returned 200 (verifie
+          +d, one call) | Send minimal parameters |                      
+      315  | R6 | The key's budget and rate limits are unknown | The prox
+           y declined the key-info query (verified) | Cache LLM and embed
+           ding responses during development |
+      316  | R7 | Overfitting to four public questions. Hidden questions 
+           probably reach the other label formats, the consumer monograph
+           s, drug classes, and drugs with no file | Inferred from the co
+           rpus and the glossary | The candidate extra questions |
+      317  | R8 | Citation grading. A file name that is not exact, or an 
+           extra file cited out of habit, may cost points | Read (p. 4). 
+           The grading method is unknown | `sources` lists exact file nam
+           es, and only for passages that support a claim |
+
+● Write(docs/architecture.md)
+  ⎿  Wrote 69 lines to docs/architecture.md
+       1 # Architecture sketch of the core
+       2 
+       3 Status: draft for the owner's approval, written 2026-11-11. No c
+         ore code exists yet. The sketch applies the rulings DEC-005 to D
+         EC-015 in the [decision log](decisions.md). Six points at the en
+         d need a ruling.
+       4 
+       5 ## Request flow
+       6 
+       7 One question passes through seven stages. Stages 1, 2, 3, and 5 
+     … +63 lines (~5 KB) (ctrl+o to expand)
+
+● The architecture sketch is drafted in docs/architecture.md and the context7
+  MCP entry is recorded. I'm updating the private brief with the smoke-test
+  numbers while the builder finishes the skeleton. · summary
+
+● Update(defense-brief.md)
+  ⎿  Added 14 lines
+      52  
+      53  [redacted: private notes]
+           [redacted: private notes]
+      54  
+      55 +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+      56 +                                                               
+      57 +[redacted: private notes]
+      58 +[redacted: private notes]
+      59 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      60 +[redacted: private notes]
+         [redacted: private notes]
+      61 +[redacted: private notes]
+         +[redacted: private notes]
+      62 +[redacted: private notes]
+      63 +[redacted: private notes]
+         +[redacted: private notes]
+      64 +[redacted: private notes]
+      65 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+      66 +                                                               
+      67 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      68 +                                                               
+      69  [redacted: private notes]
+      70  
+      71  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+
+● Update(defense-brief.md)
+  ⎿  Added 2 lines, removed 2 lines
+      108  
+      109  [redacted: private notes]
+      110  
+      111 -[redacted: private notes]
+          -[redacted: private notes]
+      112 -[redacted: private notes]
+          -[redacted: private notes]
+      111 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      112 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      113  [redacted: private notes]
+           [redacted: private notes]
+      114  [redacted: private notes]
+           [redacted: private notes]
+      115  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+
+● Update(defense-brief.md)
+  ⎿  Added 1 line
+      118  
+      119  [redacted: private notes]
+      120  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      121 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+
+● Bash(cd ~/applications/sntx/work-test/pharmag/corpus && echo "===
+      C3: ibuprofen label on warfarin / anticoagulants ===" && grep -n -i -E
+      'warfarin|anticoag…)
+  ⎿  === C3: ibuprofen label on warfarin / anticoagulants ===
+     98:NSAIDs, including Ibuprofen tablets, can cause serious gastrointest
+     inal (GI) adverse events including inflammation, bleeding, ulceration,
+     … +44 lines (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag && python3 -I -
+      <<'EOF'
+      from pathlib import Path…)
+  ⎿  ok
+      M ai-config/README.md
+      M docs/decisions.md
+     … +3 lines (ctrl+o to expand)
+
+  Called context7 2 times (ctrl+o to expand)
+
+● Update(ai-config/README.md)
+  ⎿  Added 1 line, removed 1 line
+      23  
+      24  | Server | Used for | First used |
+      25  |---|---|---|
+      26 -| context7 | Current PydanticAI 2.0 docs, read before the archi
+         -tecture sketch | 2026-11-11 |                                  
+      26 +| context7 | Current PydanticAI 2.0 docs, read before the archi
+         +tecture sketch. Current DeepEval docs, read before the eval ste
+         +p | 2026-11-11 |                                               
+      27  
+      28  The sessions also used tools that are neither skills nor MCP se
+          rvers: Claude Code's built-in web search, Docker, and `curl`.
+      29  
+
+● You want a submission you can defend file by file, and this round turned your
+  rulings into a logged, pushed baseline. The skeleton is still being built, so
+  I have not verified or pushed it yet.
+
+  Done
+
+  - Rulings. docs/decisions.md now holds DEC-005 to DEC-020, including the five
+    where you overruled my recommendation.
+  - .env. I removed the quotes and renamed the variable to OPENAI_BASE_URL. The
+    graders' --env-file flag now delivers four clean values inside a container.
+  - First push. Commit 51894c7 is on GitHub with the docs, the corpus, and
+    ai-config/. The staged content contained neither the key nor the proxy
+    hostname.
+  - Licence. The upstream mattpocock/skills LICENSE file is MIT, and the notice
+    now sits beside the copied skill.
+  - Proxy smoke test. Seven calls, all 200, one measurement each:
+    - Tool calling works, and the model issued two tool calls in one turn.
+    - Strict JSON schema output works.
+    - temperature: 0 and reasoning_effort are accepted.
+    - The sertraline boxed warning passed the content filter.
+    - Small chat calls took 1 to 5 seconds.
+    - One embedding request of 256 passages took 8.5 seconds, so start-up
+      indexing needs parallel batches.
+
+  In progress
+
+  A builder subagent is writing the skeleton: Dockerfile, /health, stub /ask,
+  static page, strict config check, and tests. When it reports, I run the
+  graders' exact commands myself, then commit and push.
+
+  Readings I applied
+
+  Say so if any of these is wrong.
+
+  - Your unlabeled "option 2" is D7, per-role model overrides.
+  - The required fields are the four variables in the file Syntax sent.
+  - With a bad config, /ask answers 503 with the field names, and /health
+    stays 200.
+
+  Architecture sketch for your ruling
+
+  docs/architecture.md is one page and stays uncommitted until you approve it.
+  The flow is plan, parallel workers with tools, writer, quote check in code,
+  critic, at most one retry, then a response assembled by code. Six points need
+  you:
+
+  1. Answer text. I propose that code renders the answer from the checked
+     claims, so no sentence escapes the checks. The alternative is free prose
+     from the writer, which reads better but can carry an unchecked sentence.
+  2. Claims still unsupported after the retry. I propose removing them from the
+     answer and listing them under critic. Ambiguous claims stay, with a visible
+     caution.
+  3. Index build. I propose that the server starts at once, the index builds in
+     the background, and /ask waits for it. The alternative blocks startup,
+     which leaves /health unreachable for the first seconds.
+  4. Override names. I propose PLANNER_MODEL, WORKER_MODEL, WRITER_MODEL, and
+     CRITIC_MODEL.
+  5. Out-of-scope questions. I propose a 200 with a short refusal and the
+     disclaimer.
+  6. Limits. I propose four workers at once, six tool calls per worker, and one
+     retry round, to be tuned after measured runs.
+
+  One more question for the eval step
+
+  DEC-002 keeps the brief's text out of tracked files, but the eval set needs
+  the four public questions word for word. I recommend tracking those four
+  sentences verbatim, since reviewers type them into the UI anyway. The
+  alternative is a gitignored file.
+
+  Not checked: whole-question latency and cost are unmeasured, and I skipped
+  pstack's architect panel because you assigned planning to this session.
+
+  Source for the licence check: mattpocock/skills LICENSE
+  ⎿  Stop says: ⏱ 10m 44s (finished 13:40:00)
+
+❯ wait to proceed further, we're coming up against the 5-hour usage limit. stop 
+  gracefully. we'll pick up later today.                                        
+  ⎿  Found 14 new diagnostic issues in 3 files (ctrl+o to expand)
+
+● Stop Task
+  ⎿  Build walking skeleton · stopped
+
+● Bash(echo "--- running containers ---" && docker ps --format
+      '{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' && echo "--- working
+      tree ---" && git status --short &…)
+  ⎿  --- running containers ---
+     --- working tree ---
+      M ai-config/README.md
+     … +14 lines (ctrl+o to expand)
+
+✻ Worked for 24m 7s · done Wednesday 12:46
+  ⎿  You've hit your 5-hour limit · resets 4pm (Africa/Casablanca)
+     /upgrade or /usage-credits to finish what you’re working on.
+✻ Baked for 22s · done Wednesday 12:46
+
+❯ continue.                                                                     
+
+● Resuming. The builder was stopped before it reported, so I'm first reading
+  what it left in the working tree, then I'll verify it against the six proofs
+  myself.
+
+● Bash(echo "--- new files ---" && git status --short && find src tests -type f
+      -not -path '*/__pycache__/*' -not -name '*.pyc' | sort | xargs wc -l &&
+      echo "--- .pyth…)
+  ⎿  --- new files ---
+      M ai-config/README.md
+      M docs/decisions.md
+     … +81 lines (ctrl+o to expand)
+
+  Read 7 files, listed 1 directory (ctrl+o to expand)
+
+● Bash(SP=.venv/lib/python3.15/site-packages && echo "--- starlette version +
+      testclient httpx lines ---" && ls $SP | grep -i -E
+      '^starlette-|^httpx|^httpcore|^fastapi…)
+  ⎿  --- starlette version + testclient httpx lines ---
+     fastapi-0.162.4.dist-info
+     httpcore2
+     … +39 lines (ctrl+o to expand)
+
+● Bash(echo "=== proof 1: test suite ===" && uv run --locked pytest -q 2>&1 |
+      tail -6)
+  ⎿  === proof 1: test suite ===
+     .................
+        [100%]
+     17 passed in 2.24s
+
+● Bash(D=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be698
+      aa-996c-4dc6-b9bb-92255565895d/scratchpad/wheelcheck && mkdir -p "$D" &&
+      cd "$D" && pri…)
+  ⎿  OK   py3.15 x86_64-manylinux_2_28  (33 packages; bm25s==0.3.16 jiter==
+     0.19.0 numpy==2.5.4 openai==3.49.0 pydantic-ai-slim==2.67.0 )
+     OK   py3.15 aarch64-manylinux_2_28  (33 packages; bm25s==0.3.16 jiter=
+     … +5 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to ~/applications/sntx/work-test/pharmag
+
+● Status: the builder's code reads clean, all 17 tests pass, and Python 3.15 has
+  wheels for the planned dependencies on both CPU architectures. Running the
+  Docker proofs now.
+
+● Bash(echo "=== proof 2: docker build ===" && (docker build -t agent . 2>&1 |
+      tail -4) && docker images agent --format 'image: {{.Repository}}:{{.Tag}}
+      size={{.Size}}…)
+  ⎿  === proof 2: docker build ===
+     #18 unpacking to docker.io/library/agent:latest 0.6s done
+     #18 DONE 2.6s
+     … +6 lines (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be698
+      aa-996c-4dc6-b9bb-92255565895d/scratchpad && wait_up() { for i in $(seq 1
+      30); do curl…)
+  ⎿  === proof 3: real .env ===
+     {"status":"ok"}  [health http=200]
+     {"answer":"Placeholder answer: the research agent is not built yet, so
+     … +59 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      from pathlib import Path…)
+  ⎿  edits applied
+     .................
+        [100%]
+     … +11 lines (ctrl+o to expand)
+
+● All six skeleton proofs pass and the tests are green after a small typing fix.
+  I'm checking which skills and MCP servers the builder called, then committing
+  and pushing. · summary
+
+● Bash(python3 -I - <<'EOF'
+      import json, collections…)
+  ⎿  tool calls: {'Bash': 28, 'mcp__context7__resolve-library-id': 2, 'mcp_
+     _context7__query-docs': 3, 'Write': 14, 'Edit': 8}
+     skills invoked: []
+     … +9 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      from pathlib import Path…)
+  ⎿  ok
+     --- staged for the skeleton commit ---
+     .dockerignore
+     … +16 lines (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be698
+      aa-996c-4dc6-b9bb-92255565895d/scratchpad && cat > "$S/commit-3.txt"
+      <<'EOF'
+      Add the wa…)
+  ⎿  59ed227 Add the walking skeleton: container, endpoints, static page, c
+     onfig check
+     e622109 Record context7 use, smoke-test evidence, and confirmed eval s
+     … +8 lines (ctrl+o to expand)
+
+● The skeleton is verified and pushed (59ed227), with all six proofs passing.
+  Core code waits on your approval of the sketch under DEC-019, so please look
+  over the open rulings as quick picks. · summary
+
+● User answered Claude's questions:
+  ⎿  · Architecture point 1. How should the final answer text be built? → Free 
+     prose from the writer
+     · Architecture point 2. A claim is still unsupported after the single retry
+     round. What happens to it? → Remove and report (Recommended)
+     · Architecture point 3. Embeddings are computed at container start 
+     (DEC-009), which I estimate at 10 to 60 seconds from one measured batch. 
+     What does the server do meanwhile? → Start at once, build in background 
+     (Recommended)
+     · Architecture point 4. DEC-011 gives each role an optional model override 
+     that defaults to OPENAI_MODEL. Which variable names? → PHARMAG_ prefix
+
+● User answered Claude's questions:
+  ⎿  · Your two rulings interact. With free prose (point 1), removing a 
+     still-unsupported claim (point 2) is no longer a simple deletion by code. 
+     How should the removal work? → Redaction call, then a marker check 
+     (Recommended)
+     · The eval set needs the four public questions word for word, but DEC-002 
+     keeps the brief's text out of tracked files. Where do the four questions 
+     go? → Track them verbatim (Recommended)
+     · Architecture point 6. Which starting limits for one question? The eval 
+     script's measured latency and cost decide the final numbers. → Looser: 6 
+     workers, 10 tool calls each
+     · How much should I build before the next check-in with you? Subagents 
+     write the code, and I verify each step and push. → Eval set, parser, 
+     retrieval, tools (Recommended)
+
+● Logged in my head, now on paper. Before I brief the builders, I'm measuring
+  section and block sizes in the corpus so the chunk-size numbers in the brief
+  come from data.
+
+● Bash(python3 -I - <<'EOF'
+      import re, glob, statistics as st…)
+  ⎿  leaf sections: n=456 median=514 p75=1028 p90=2244 p95=2938 max=16952 c
+     hars
+       sections over 2000 chars: 55
+     … +39 lines (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag/corpus && echo "===
+      ibuprofen 194-198 ===" && sed -n '194,198p' dailymed-ibuprofen.md | cut
+      -c1-700 && echo "…)
+  ⎿  === ibuprofen 194-198 ===
+     Warfarin-type anticoagulants
+     … +40 lines (ctrl+o to expand)
+
+● Bash(cd ~/applications/sntx/work-test/pharmag && cat >>
+      docs/decisions.md <<'EOF'…)
+  ⎿  models import ok: dict_keys(['id', 'file', 'drug', 'source', 'section'
+     , 'heading_path', 'line_start', 'line_end', 'text'])
+
+● Your eight rulings are logged (DEC-021 to DEC-028) and the shared Chunk type
+  is written. I'm updating the sketch and writing the eval set, then dispatching
+  two builders in parallel for the parser and index. · summary
+
+● Write(docs/architecture.md)  ⎿  Added 38 lines, removed 29 lines
+       1 -# Architecture sketch of the core                              
+       1 +# Architecture of the core                                     
+       2  
+       3 -Status: draft for the owner's approval, written 2026-11-11. No 
+         -core code exists yet. The sketch applies the rulings DEC-005 to
+         - DEC-015 in the [decision log](decisions.md). Six points at the
+         - end need a ruling.                                            
+       3 +Status: approved by the owner on 2026-11-11 with the rulings DE
+         +C-021 to DEC-026 in the [decision log](decisions.md). The desig
+         +n applies the earlier rulings DEC-005 to DEC-015. The corpus pa
+         +rser, the index, and the tools come first. The agents follow af
+         +ter a check-in with the owner (DEC-028).                       
+       4  
+       5  ## Request flow
+       6  
+       7 -One question passes through seven stages. Stages 1, 2, 3, and 5
+         - are LLM calls. Stages 4 and 7 are plain code.                 
+       7 +One question passes through these stages. Stages 1, 2, 3, 5, an
+         +d 7 are LLM calls. Stages 4 and 8 are plain code.              
+       8  
+       9  1. **Plan.** The planner returns a typed `Plan`: whether the qu
+          estion is in scope, and a list of sub-questions, each with the 
+          drugs it concerns.
+      10 -2. **Research.** One worker per sub-question, all at the same t
+         -ime. Each worker runs its own tool-calling loop over the four t
+         -ools and returns typed `Findings`: statements, each with a verb
+         -atim quote and the ID of the chunk the quote comes from.       
+      11 -3. **Write.** The writer turns all findings into a typed `Draft
+         -`, a list of claims. Each claim carries its citations (chunk ID
+         - and quote) and a kind: a fact from one passage, or a synthesis
+         - across passages.                                              
+      10 +2. **Research.** One worker per sub-question, up to six at the 
+         +same time. Each worker runs its own tool-calling loop over the 
+         +four tools, with at most ten tool calls, and returns typed `Fin
+         +dings`: statements, each with a verbatim quote and the ID of th
+         +e chunk the quote comes from.                                  
+      11 +3. **Write.** The writer returns a typed `Draft`: the answer as
+         + prose, and a numbered list of claims. The prose cites each cla
+         +im with its marker, such as `[3]`. Each claim carries its citat
+         +ions (chunk ID and quote) and a kind: a fact from one passage, 
+         +or a synthesis across passages.                                
+      12  4. **Quote check.** Code confirms that each quote occurs in the
+           chunk it cites. A claim with a failed quote is marked unsuppor
+          ted with no LLM involved.
+      13 -5. **Review.** The critic sees only the claims and the cited ch
+         -unks. It returns a verdict per claim: supported, unsupported, o
+         -r ambiguous, with a reason, and a follow-up query for each unsu
+         -pported claim.                                                 
+      14 -6. **Retry, at most once.** New workers research the follow-up 
+         -queries. The writer revises the draft. Stages 4 and 5 run again
+         -, and their result is final.                                   
+      15 -7. **Respond.** Code renders the answer from the claims, lists 
+         -the source files, attaches the critic's flags and the trace, an
+         -d appends the disclaimer.                                      
+      13 +5. **Review.** The critic sees the prose, the claims, and the c
+         +ited chunks. It returns a verdict per claim: supported, unsuppo
+         +rted, or ambiguous, with a reason, and a follow-up query for ea
+         +ch unsupported claim. It also reports any statement in the pros
+         +e that carries no marker, and such a statement counts as an uns
+         +upported claim.                                                
+      14 +6. **Retry, at most once.** New workers research the follow-up 
+         +queries. The writer revises the draft. Stages 4 and 5 run again
+         +, and their verdicts are final.                                
+      15 +7. **Redact, only if needed.** If a claim is still unsupported,
+         + the writer rewrites the prose without it. This is the last LLM
+         + call.                                                         
+      16 +8. **Respond.** Code confirms that every marker in the prose po
+         +ints to a surviving claim. It lists the source files, reports t
+         +he removed claims and the cautions under `critic`, attaches the
+         + trace, and appends the disclaimer.                            
+      17  
+      17 -An out-of-scope question skips stages 2 to 6 and gets a short r
+         -efusal with the disclaimer.                                    
+      18 +An out-of-scope question skips stages 2 to 7 and gets a short r
+         +efusal with the disclaimer, as a 200 (DEC-012).                
+      19  
+      20  ## Data shapes
+      21  
+      22  | Type | Fields | Made by |
+      23  |---|---|---|
+      23 -| `Chunk` | `id` (file name plus line range), `file`, `drug`, `
+         -source`, `section` (canonical key), `heading_path`, `text` | Co
+         -rpus parser, at startup |                                      
+      24 +| `Chunk` | `id` (file name plus line range), `file`, `drug`, `
+         +source`, `section` (canonical key), `heading_path`, `line_start
+         +`, `line_end`, `text` | Corpus parser, at startup |            
+      25  | `Plan` | `in_scope`, `reason`, `sub_questions` (each with `te
+          xt` and `drugs`) | Planner |
+      26  | `Findings` | `sub_question`, `findings` (each with `statement
+          `, `chunk_id`, `quote`), `not_found` | Worker |
+      26 -| `Draft` | `claims` (each with `text`, `kind`, `citations`) | 
+         -Writer |                                                       
+      27 -| `Verdict` | per claim: `status`, `reason`, `follow_up` | Quot
+         -e check, then critic |                                         
+      27 +| `Draft` | `answer` (prose with markers), `claims` (each with 
+         +`text`, `kind`, `citations`) | Writer |                        
+      28 +| `Verdict` | per claim: `status`, `reason`, `follow_up`. Plus 
+         +the unmarked statements found in the prose | Quote check, then 
+         +critic |                                                       
+      29  | `TraceEvent` | `stage`, `kind`, `data`, elapsed time | Every 
+          stage |
+      29 -| `AskResponse` | `answer`, `sources`, `citations`, `plan`, `to
+         -ol_calls`, `critic`, `disclaimer`, `timings`, `usage` | Stage 7
+         - |                                                             
+      30 +| `AskResponse` | `answer`, `sources`, `citations`, `plan`, `to
+         +ol_calls`, `critic`, `disclaimer`, `timings`, `usage` | Stage 8
+         + |                                                             
+      31  
+      32  ## Modules
+      33  
+     ...
+      35  |---|---|
+      36  | `config.py` (exists) | Settings and the strict config check |
+      37  | `api.py` (exists) | Routes: `/health`, `/ask`, `/ask/stream`,
+           and the static page |
+      37 -| `models.py` | The types above |                              
+      38 +| `models.py` (started) | The types above |                    
+      39  | `corpus.py` | Files to chunks: heading tree, flattened tables
+          , the three label formats, canonical section keys |
+      40  | `index.py` | Embeddings in a NumPy array, BM25, rank fusion, 
+          metadata filters |
+      40 -| `tools.py` | `search_corpus`, `get_section`, `find_interactio
+         -ns`, `lookup_glossary`, as plain functions over the index |    
+      41 +| `tools.py` | `search_corpus`, `get_section`, `find_interactio
+         +ns`, `lookup_glossary`, as plain functions over the corpus and 
+         +the index |                                                    
+      42  | `agents.py` | The four PydanticAI agents (planner, worker, wr
+          iter, critic) and their prompts |
+      42 -| `grounding.py` | The quote check |                           
+      43 -| `pipeline.py` | The seven stages, the retry, the limits, and 
+         -the trace |                                                    
+      43 +| `grounding.py` | The quote check and the marker check |      
+      44 +| `pipeline.py` | The stages, the retry, the limits, and the tr
+         +ace |                                                          
+      45  
+      46  ## Where the brief's five steps land
+      47  
+     ...
+      50  | Plan | Stage 1 | `plan` |
+      51  | Retrieve by in-memory similarity | `index.py`, reached throug
+          h `search_corpus` | `tool_calls` with chunk IDs and scores |
+      52  | At least two tools, chosen by the agent | Each worker picks a
+          mong four tools. No code path fixes the order | `tool_calls` di
+          ffer by question |
+      52 -| Critic before the final answer | Stages 4, 5, and 6 | `critic
+         -` |                                                            
+      53 -| Cited answer with a disclaimer | Stage 7 | `answer`, `sources
+         -`, `citations`, `disclaimer` |                                 
+      53 +| Critic before the final answer | Stages 4 to 7 | `critic` |  
+      54 +| Cited answer with a disclaimer | Stage 8 | `answer`, `sources
+         +`, `citations`, `disclaimer` |                                 
+      55  
+      55 -## Limits and measurements                                     
+      56 +## Startup, limits, and measurements                           
+      57  
+      57 -- The smoke test on 2026-11-11 measured single calls at 1 to 5 
+         -seconds for small prompts, and one embedding request of 256 pas
+         -sages at 8.5 seconds. These are single measurements. The eval s
+         -cript will measure whole questions.                            
+      58 -- Each role's model comes from an optional override that defaul
+         -ts to `OPENAI_MODEL` (DEC-011). All roles share one key and one
+         - base URL.                                                     
+      58 +- The server starts at once and builds the index in the backgro
+         +und. `/health` returns 200 and reports `building`, `ready`, or 
+         +`failed`. `/ask` waits for the index (DEC-024).                
+      59 +- Each role's model comes from `PHARMAG_PLANNER_MODEL`, `PHARMA
+         +G_WORKER_MODEL`, `PHARMAG_WRITER_MODEL`, or `PHARMAG_CRITIC_MOD
+         +EL`. An unset name means `OPENAI_MODEL` (DEC-025). All roles sh
+         +are one key and one base URL.                                  
+      60 +- Starting limits are six workers at once, ten tool calls per w
+         +orker, and one retry round (DEC-026). The eval script's measure
+         +d latency and cost decide the final numbers.                   
+      61 +- The smoke test on 2026-11-11 measured single calls at 1 to 5 
+         +seconds for small prompts, and one embedding request of 256 pas
+         +sages at 8.5 seconds. These are single measurements.           
+      62  - Each LLM call records input tokens, cached input tokens, and 
+          output tokens, and the log warns when the cache hit rate drops.
+      63  - The streaming endpoint sends each `TraceEvent` as it happens 
+          and ends with the full `AskResponse`.
+      64  
+      62 -## Points that need the owner's ruling                         
+      65 +## Chunk size, from the corpus                                 
+      66  
+      64 -1. **How the answer text is built.** Proposed: code renders the
+         - answer from the claims, so every sentence in the answer has pa
+         -ssed the checks. The alternative is free prose from the writer 
+         -beside a claim list, which reads better but can contain a sente
+         -nce that no check saw.                                         
+      65 -2. **What happens to a claim that is still unsupported after th
+         -e retry.** Proposed: remove the claim from the answer and list 
+         -it under `critic`. Ambiguous claims stay in the answer with a v
+         -isible caution. The alternative keeps unsupported claims in the
+         - answer with a flag.                                           
+      66 -3. **When the index is built.** Proposed: the server starts at 
+         -once, the index builds in the background, `/health` reports `bu
+         -ilding`, `ready`, or `failed`, and `/ask` waits for the index. 
+         -The alternative blocks startup until the index exists, which le
+         -aves `/health` unreachable for the first seconds.              
+      67 -4. **Names of the role overrides.** Proposed: `PLANNER_MODEL`, 
+         -`WORKER_MODEL`, `WRITER_MODEL`, `CRITIC_MODEL`.                
+      68 -5. **Scope refusals.** Proposed: the planner marks a question o
+         -ut of scope, and the response is a 200 with a short refusal and
+         - the disclaimer.                                               
+      69 -6. **Limits.** Proposed: four workers at once, six tool calls p
+         -er worker, one retry round. The numbers change after the first 
+         -measured runs.                                                 
+      67 +A heading-tree split gives 456 leaf sections with a median of 5
+         +14 characters. Seventeen sections exceed 4,000 characters, and 
+         +the largest has 16,952. The largest pipe table is one block of 
+         +4,806 characters. The parser therefore caps a chunk at 5,000 ch
+         +aracters and splits a longer section between paragraph blocks, 
+         +which keeps every table in the corpus whole. A single line long
+         +er than the cap stays whole.                                   
+      68 +                                                               
+      69 +## Rulings on the sketch                                       
+      70 +                                                               
+      71 +| Point | Ruling | Log entry |                                 
+      72 +|---|---|---|                                                  
+      73 +| How the answer text is built | Free prose from the writer, wi
+         +th numbered claim markers | DEC-021 |                          
+      74 +| A claim still unsupported after the retry | Removed from the 
+         +answer and reported under `critic`. Ambiguous claims stay with 
+         +a caution | DEC-022 |                                          
+      75 +| How a claim is removed from prose | One redaction call by the
+         + writer, then a marker check in code. The critic also reports u
+         +nmarked statements | DEC-023 |                                 
+      76 +| When the index is built | In the background, after the server
+         + starts | DEC-024 |                                            
+      77 +| Names of the role overrides | `PHARMAG_` prefix | DEC-025 |  
+      78 +| Starting limits | Six workers, ten tool calls each, one retry
+         + | DEC-026 |                                                   
+
+● Write(evals/questions.json)
+  ⎿  Wrote 195 lines to evals/questions.json
+      1 {
+      2   "status": "Draft. The owner has not yet confirmed the expected 
+        answers.",
+      3   "fields": {
+      4     "origin": "public: one of the four questions published with t
+        he assignment, word for word (DEC-027). ours: added by this proje
+        ct (DEC-017).",
+      5     "expect": "answer: a grounded answer. abstain: the answer say
+        s the corpus does not cover it. refuse: the question is out of sc
+        ope.",
+     … +190 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      import json…)
+  ⎿  11 questions; all gold ranges hold their key strings
+     c1fc5e8 Approve the core architecture and add the eval question set
+     59ed227 Add the walking skeleton: container, endpoints, static page, c
+     … +2 lines (ctrl+o to expand)
+
+● 2 background agents launched (↓ to manage)
+   ├ parser-builder: Build corpus parser
+   └ index-builder: Build search index
+
+● Two builders are running in parallel worktrees, one on the corpus parser and
+  one on the search index. Meanwhile I'm adding today's architecture rulings to
+  your private defense brief. · summary
+
+● Update(defense-brief.md)
+  ⎿  Added 6 lines
+       94  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+       95  [redacted: private notes]
+           [redacted: private notes]
+       96  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+       97 +[redacted: private notes]
+          +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       98 +[redacted: private notes]
+          +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+       99 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      100 +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+      101 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+      102 +[redacted: private notes]
+          [redacted: private notes]
+          +[redacted: private notes]
+      103  
+      104  [redacted: private notes]
+      105  
+
+● Update(defense-brief.md)
+  ⎿  Added 1 line
+      135  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      136  [redacted: private notes]
+           [redacted: private notes]
+           [redacted: private notes]
+      137  [redacted: private notes]
+           [redacted: private notes]
+      138 +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+          +[redacted: private notes]
+
+● You want a submission you can defend file by file, and the deterministic half
+  is now under way on an approved design. Two builders are still running, so I
+  have no results from them yet.
+
+  Done since you said continue
+
+  - Skeleton. Verified and pushed (59ed227). The 17 tests pass and the image
+    builds with the graders' command.
+    - With your corrected .env, /health and /ask return 200 and / serves the
+      page.
+    - With a defective env file the container still starts, /health stays 200,
+      and /ask returns 503 naming all four variables.
+    - The container runs as a non-root user and holds no .env.
+  - Your eight architecture rulings. Logged as DEC-021 to DEC-028.
+    docs/architecture.md is updated to the approved form and pushed (c1fc5e8).
+  - Eval set. evals/questions.json holds the four public questions verbatim and
+    C1 to C7. A script confirmed that every gold line range contains the strings
+    its facts rely on.
+
+  Running now
+
+  One builder is writing the corpus parser and one the search index, each in its
+  own worktree. When both report, I merge, rerun the suite, and push. The tools
+  and the retrieval comparison against the fixed-size baseline come next, then
+  I check in before the agents (DEC-028).
+
+  Choices I made that you can veto
+
+  - Python 3.15. It is the newest release with wheels for every planned
+    dependency on both CPU architectures, per DEC-014. The same resolve passes
+    on 3.14 as a fallback.
+  - bm25s for BM25. I picked it under your rule to use the most performant
+    current tools.
+  - Chunk cap of 5,000 characters. The corpus has 456 leaf sections with a
+    median of 514 characters, and the largest table is 4,806. The cap keeps
+    every table whole.
+  - httpx2 as the test client dependency. Starlette now imports httpx2 and
+    deprecates httpx. I confirmed this in the installed Starlette source.
+
+  Two things for you to confirm while they run
+
+  1. tests/PROPERTIES.md, 13 properties of the skeleton.
+     - Config check (6): it reports exactly the defective required variables. It
+       never repairs a value. No problem text contains a value. Printed
+       settings hide the key. A one-character misspelling is named. An unrelated
+       OPENAI_* name is never taken for one.
+     - Server (7): /health is 200 in every config state. /ask gives the
+       placeholder with valid config, 503 naming the variables with bad config,
+       and 422 for a malformed body. The key never appears in a response. The
+       page loads nothing from another host. / serves the page and its assets.
+  2. evals/questions.json, the expected answers. These are the judgment calls:
+     - P2. A correct answer must say the two labels word bleeding differently,
+       not present them as identical.
+     - P4. A correct answer must state the unit mismatch between the question
+       and the label.
+     - C1. The answer must abstain on rivaroxaban. Citing the glossary is
+       allowed.
+     - C6. The answer gives the label's facts and must not tell the patient to
+       stop or continue warfarin.
+
+  Not checked: whole-question latency and cost remain unmeasured until the
+  agents exist. I skipped pstack's pre-commit deslop pass on the skeleton,
+  having read every line of it myself.
+  ⎿  Stop says: ⏱ 14m 37s (finished 17:15:02)
+
+✻ Baked for 12m 27s · done Wednesday 16:15
+
+› Message from parser-builder
+  The corpus parser is done and committed. `uv run pytest -q` gives `33 passed
+  in 6.26s`, which is the 17 existing tests plus 16 new ones. `uv sync --locked`
+  worked as is.
+
+  **Branch and commit:** `worktree-agent-a441ad5c7a96f5f24`, commit `b1e7718`.
+  Not pushed.
+
+  **Files** (all under `~/applications/sntx/work-test/pharmag/.claude/
+  worktrees/agent-a441ad5c7a96f5f24/`):
+  - `src/pharmag/corpus.py`
+  - `tests/test_corpus.py`
+  - `tests/PROPERTIES.md`, with the new section appended at the end
+
+  **Real-corpus numbers:**
+  - 451 chunks, from all 21 files.
+  - Median chunk length is 545 characters and the maximum is 4,976.
+  - 0 chunks exceed `MAX_CHARS`, so no single-line exceptions occur in the
+  corpus.
+  - Chunks with `section=None` have one of two top-level headings: `Notice:` and
+  `Other names`. I put both on the explicit unmapped list in the test.
+
+  **Table check:** all pipe-table blocks stay whole.
+  `test_no_table_block_is_split` covers every file.
+
+  **Deviations from the brief:**
+  - The 451 chunks differ from your 456 leaf sections because the parser drops
+  heading-only sections and splits some long ones, so the counts differ in both
+  directions.
+  - I added one test beyond the brief,
+  `test_unknown_file_name_is_rejected_by_name`, and its property line in
+  `PROPERTIES.md`.
+  - My synthetic documents place the source line at line 3, after the title and
+  a blank line, as in the real files.
+
+  **Assumptions:**
+  - A "Source: " line within the first 5 lines and before any heading is
+  metadata. A later "Source: " line is body text.
+  - Lines split on `\n` only, and bytes are decoded as UTF-8. This keeps line
+  numbers equal to the file's.
+  - `.md` and `.txt` are matched by suffix. Any other suffix is ignored, and a
+  bad stem raises `ValueError(...<name>)`.
+  - A heading counts as "top level" if it is the first entry of `heading_path`,
+  whatever its level.
+  - MedlinePlus headings match by their start, as you specified. This sends
+  `Brand names of combination products` to `brand_names` as well, and I chose to
+  keep that.
+  - Unnumbered headings are matched by start, case-insensitively, so `Warnings`
+  and `WARNINGS` both give `warnings`.
+  - The `WARNING:` and `IMPORTANT WARNING` rules apply to any non-glossary file.
+  Only the heading-less preamble is limited to DailyMed.
+  - A MedlinePlus preamble gets `None`.
+  - The "unmapped headings" test reads headings from the chunks, so a top-level
+  heading with no body is not checked.
+
+  **Additions to your section table:**
+  - None. Every top-level heading I found fits your table except `Notice:` and
+  `Other names`.
+  - All the glossary headings (`Core concepts`, `Reading drug labels` and so on)
+  fall under `glossary`.
+
+  **Numbering:** I numbered the new properties 14 to 23, continuing from 13. If
+  the other builder inserts higher up in `tests/PROPERTIES.md`, the numbers will
+  clash and will need renumbering at merge.
+
+  **`Chunk` change needed:** none.
+
+  **Skills and MCP servers used:** none.
+
+  **Snags:**
+  - A single long `cat <<EOF >` shell command was refused by the
+  worktree-isolation check as too complex. I switched to the Write tool.
+  - Existing `Source` literal typing needed a `# type: ignore` on the `source=`
+  argument, because I pass a `str` from a regex match.
+
+  **Wants:** none.
+
+  Skipped: no mutation or bug-injection check of the property tests. Risk:
+  `UNMAPPED_ON_PURPOSE` only guards headings that have body text.
+
+● Bash(echo "--- main status ---" && git status --short | head -5 && git
+      check-ignore -v .claude/worktrees 2>/dev/null || echo ".claude/worktrees
+      is NOT ignored" ; ech…)
+  ⎿  --- main status ---
+     ?? .claude/
+     .claude/worktrees is NOT ignored
+     … +172 lines (ctrl+o to expand)
+
+● Agent "Build corpus parser" finished · 2m 35s
+  ⎿  Found 21 new diagnostic issues in 4 files (ctrl+o to expand)
+
+● Bash(git show worktree-agent-a441ad5c7a96f5f24:tests/test_corpus.py | sed -n
+      '1,125p')
+  ⎿  import re
+     import tempfile
+     from pathlib import Path
+     … +122 lines (ctrl+o to expand)
+
+› Message from index-builder
+  Done. The index is built and committed on branch
+  `worktree-agent-ae616bd0a68a260bf`, commit `30fec78`. Nothing is pushed.
+
+  **Files** (all under ~/applications/sntx/work-test/pharmag/.claude/w
+  orktrees/agent-ae616bd0a68a260bf/):
+  - `src/pharmag/index.py`
+  - `tests/test_index.py`
+  - `tests/PROPERTIES.md`, with the new section inserted before `## Server and
+  page`
+  - `pyproject.toml`
+  - `uv.lock`
+
+  **Proof**
+  - `uv lock` kept your exact pins: bm25s 0.3.16, numpy 2.5.4, openai 3.49.0. It
+  also added jiter 0.19.0 and sniffio 1.3.1, which openai needs. Lock resolved
+  32 packages on CPython 3.15.2.
+  - `uv sync` succeeded.
+  - `uv run pytest -q` gave `28 passed in 9.07s`. That is the 17 existing tests
+  plus 11 new ones: 7 property tests and 4 examples.
+  - I did not run `pytest` against the final committed tree separately, but the
+  commit contains exactly the tree I tested.
+
+  **Timing**
+  - The script is `/tmp/claude-1000/~-applications-sntx-work-test-phar
+  mag/0be698aa-996c-4dc6-b9bb-92255565895d/scratchpad/timing.py`.
+  - Building the index over 600 fake chunks took 0.138s.
+  - 100 searches took 0.191s, about 1.9 ms each.
+  - The chunks were 90 random words each, and the queries were 6 random words.
+  - The number includes the fake embedder's query call, the BM25 scoring, the
+  matrix product, and the fusion. It leaves out the real embedding call for the
+  query, which is a network round trip of seconds. It also leaves out the
+  build-time embedding of the corpus. It is one run on one machine.
+
+  **Assumptions**
+  - The header line format is `drug-or-glossary | source | heading > path`. The
+  brief fixed the header's contents but not its separator.
+  - BM25 is built over all chunks, so term statistics come from the whole
+  corpus. Filters only narrow which chunks can be ranked.
+  - A query that tokenizes to nothing, such as punctuation only, gets no BM25
+  rankings. `bm25s` raises `IndexError` on an empty token list, so I guard it.
+  - `OpenAIEmbedder` sorts each response by the API's `index` field. This gives
+  the right order even if rows come back out of order.
+  - `k=0` returns an empty list.
+  - Building from zero chunks is unsupported. I tried it and it failed, so I
+  left it out.
+  - In `PROPERTIES.md` I numbered the new lines I1 to I8, not 7 to 14. The
+  existing Server section already uses 7 to 13, and renumbering it would touch
+  lines I was told to leave alone and could collide with the other builder's
+  appended section. You may want to renumber at merge time.
+
+  **Deviations from the brief**
+  - The brief wanted one `PROPERTIES.md` line per property. The four example
+  tests share one line, I8.
+  - Test 4 (a chunk's own text returns it first) skips generated cases where two
+  chunks get the same fake vector. Hashed bags of words collide for texts that
+  are word permutations of each other.
+  - Test 4 passes in this run, but it is not guaranteed by design. If the chunk
+  is first in the dense ranking but 3rd in BM25, a chunk that is 2nd dense and
+  1st BM25 can beat it. Hypothesis did not find such a case.
+  - There is no `pytest-asyncio` in the project. I used `asyncio.run` inside the
+  sync tests so I would not add a dependency.
+  - The "shortcut:" comment form was not needed. The only comments are two
+  one-line "why" notes.
+
+  **`Chunk`:** no change needed. It is untouched.
+
+  **Skills and MCP used**
+  - MCP: context7 (`resolve-library-id` and `query-docs`) for the `bm25s` and
+  `openai` v3 docs.
+  - Skills: none loaded.
+
+  **Snags**
+  - A single Bash call that combined a heredoc file write with a second command
+  was refused as "too complex to verify" for the worktree. I used the Write tool
+  instead.
+  - The project requires Python 3.15 but the system Python is 3.12. `uv` fetched
+  3.15.2 on its own, so this cost nothing in the end.
+
+  **Wants**
+  - A pytest-asyncio or anyio plugin in the dev group, if more async tests are
+  coming.
+
+● Agent "Build search index" finished · 2m 49s
+
+● Bash(git diff --stat main...worktree-agent-ae616bd0a68a260bf | tail -6 && echo
+      "--- pyproject deps ---" && git show
+      worktree-agent-ae616bd0a68a260bf:pyproject.toml |…)
+  ⎿   pyproject.toml       |   3 +
+      src/pharmag/index.py | 118 +++++++++++++++++++++++++++++++++
+      tests/PROPERTIES.md  |  13 ++++
+     … +139 lines (ctrl+o to expand)
+
+● Both builders have reported, and their code looks clean. I'm merging both
+  branches now and will rerun everything myself afterward. · summary
+
+● Bash(git merge -q --ff-only worktree-agent-a441ad5c7a96f5f24 && echo "parser
+      branch fast-forwarded" &&
+      S=/tmp/claude-1000/~-applications-sntx-work-test-pha…)
+  ⎿  parser branch fast-forwarded
+     Auto-merging tests/PROPERTIES.md
+     index branch merged
+     … +14 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      from pathlib import Path…)
+  ⎿  edits applied
+     44 passed in 12.46s
+     chunks=451 median_chars=545 max_chars=4976 files=21 none_sections=5
+     … +16 lines (ctrl+o to expand)
+
+● Both modules are merged and all 44 tests pass; a live run built the index in
+  10.3 seconds over 451 chunks. I'm committing the merge fixes, then dispatching
+  the tools builder and the retrieval-eval builder. · summary
+
+● Bash(git add src/pharmag/corpus.py .gitignore &&
+      S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be698a
+      a-996c-4dc6-b9bb-92255565895d/scratchpad &…)
+  ⎿  983d838 Type the parser's source value and ignore agent worktrees
+     02573b2 Merge the search index into main
+     30fec78 Add hybrid exact search index (dense matmul, BM25, rank fusion
+     … +3 lines (ctrl+o to expand)
+
+● 2 background agents launched (↓ to manage)
+   ├ builder (Build the four tools)
+   └ @retrieval-eval-builder (builder)
+
+● Status: the tools builder and the retrieval-eval builder are both running.
+  Recording the parser, index and live-run numbers in your private brief while
+  they work.
+
+● Update(defense-brief.md)
+  ⎿  Added 8 lines
+      75  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      76  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      77  
+      78 +[redacted: private notes]
+         +[redacted: private notes]
+      79 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      80 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+      81 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      82 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      83 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      84 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      85 +                                                               
+      86  [redacted: private notes]
+      87  
+      88  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+
+● Parser and index are merged, verified by me, and pushed (983d838). Two more
+  builders are running, so their results are not in yet.
+
+  - Parser. It yields 451 chunks from the 21 files, with a median of 545
+    characters and a maximum of 4,976. No table is split.
+  - Index. A live build with real embeddings took 10.3 seconds for the 451
+    chunks, which is the measured start-up cost behind the background build you
+    chose.
+  - Tests. All 44 pass on the merged tree.
+  - First retrieval look. With the raw question as the query and k=6, the gold
+    passage was in the top 6 for seven of nine questions. The search missed the
+    warfarin table row for both interaction questions, P3 and C3. That row lists
+    sertraline and ibuprofen under their drug classes, and it is the case
+    find_interactions exists for.
+
+  Running now. One builder is writing the four tools in a worktree. The other is
+  writing the retrieval eval script with the fixed-size baseline in the main
+  checkout, because it needs the real .env. When both report, I verify, merge,
+  push, and check in with you before the agents (DEC-028).
+
+  Still waiting on you: the 13 skeleton properties in tests/PROPERTIES.md and
+  the expected answers in evals/questions.json.
+  ⎿  Stop says: ⏱ 4m 39s (finished 17:22:23)
+› Message from tools-builder
+  The four tools are built and committed, and the suite passes (59 passed). One
+  caveat: an existing `tests/test_index.py` test is flaky and fails now and
+  then, independent of my change.
+
+  **Branch and commit:** `worktree-agent-ab97458f535c18bae`, commit `d270e8a`.
+
+  **Files**
+  - `~/applications/sntx/work-test/pharmag/.claude/worktrees/agent-ab9
+  7458f535c18bae/src/pharmag/tools.py` (new)
+  - `.../tests/test_tools.py` (new)
+  - `.../tests/fakes.py` (new; holds `FakeEmbedder` and `DIMS`)
+  - `.../tests/test_index.py` (now imports from `fakes`)
+  - `.../tests/PROPERTIES.md` (new `## Tools` section appended at the very end,
+  lines T1 to T8)
+
+  **Proof**
+  - `uv sync --locked` output: `Resolved 32 packages in 1ms`, `Audited 30
+  packages in 0.49ms`.
+  - `uv run pytest -q`, with the log noise filtered out: `59 passed in 24.01s`.
+  That is the 44 existing tests plus 15 new ones.
+  - **Flaky test:** `test_searching_a_chunks_own_text_returns_it_first`
+  (property I4) failed in about 1 of 6 clean runs and on 2 of 3 runs after a
+  failure had been stored in `.hypothesis`. I saw the same failure on an
+  unmodified copy of HEAD's `test_index.py`, so it comes from that test, not
+  from the move.
+  - **Cause:** a tie in the rank fusion. For the chunks `text='warfarin
+  warfarin'` and `text='warfarin'`, searching the second chunk's own text gives
+  both the same fused score, and the first chunk wins on order. The fix belongs
+  to whoever owns `test_index.py` or `index.py`. I did not touch it. If it fails
+  for you, `rm -r .hypothesis` and rerun.
+
+  **`find_interactions("warfarin", "sertraline")`:** 1 passage from the warfarin
+  files and 6 from the sertraline files, 7 in total. The note reads: "1
+  passage(s) in the warfarin files mention 'sertraline'. 6 passage(s) in the
+  sertraline files mention 'warfarin'."
+
+  **Extracted brand names and class terms** (class terms are lowercased and have
+  a trailing "s" dropped)
+
+  | Drug | Brands | Class terms |
+  |---|---|---|
+  | acetaminophen | none | pain reliever, fever reducer, analgesic, antipyretic
+  |
+  | albuterol | none | bronchodilator |
+  | amoxicillin | Amoxil, Dispermox, Larotid Suspension, Polymox Suspension,
+  Trimox, Wymox, Talicia, Voquezna Dual Pak, Voquezna Triple Pak |
+  penicillin-like antibiotic |
+  | apixaban | Eliquis, Eliquis Sprinkle | factor xa inhibitor |
+  | aspirin | 30 names: Acuprin, Anacin Aspirin Regimen, Ascriptin, Aspergum,
+  Aspidrox, Aspir-Mox, Aspirtab, Aspir-trin, Bayer Aspirin, Bufferin, Buffex,
+  Easprin, Ecotrin, Empirin, Entaprin, Entercote, Fasprin, Genacote, Gennin-FC,
+  Genprin, Halfprin, Magnaprin, Miniprin, Minitabs, Ridiprin, Sloprin, Uni-Buff,
+  Uni-Tren, Valomag, Zorprin | salicylate |
+  | atorvastatin | Atorvaliq, Lipitor | statin, hmg-coa reductase inhibitor |
+  | ibuprofen | none | nsaid |
+  | metformin | none | biguanide |
+  | sertraline | Zoloft | ssri, selective serotonin reuptake inhibitor |
+  | warfarin | Coumadin, Jantoven | blood thinner, anticoagulant |
+
+  Five drugs have no brands because their only brand section is "Brand names of
+  combination products", which the brief excludes. The amoxicillin brands
+  Talicia and the two Voquezna paks are combination products listed under the
+  plain "Brand names" heading, so they came through as brands.
+
+  **Assumptions**
+  - Each tool returns a `ToolResult(passages, note)`. There is one `Passage`
+  class with optional `score`, `dense_rank`, `bm25_rank` and `matched`, set only
+  by the tool that needs them.
+  - `find_interactions` returns A's passages first, then B's; the `file` field
+  tells you the direction. The cap is 8 per direction, and the note counts the
+  rest.
+  - A mention is a whole-word, case-insensitive match on the chunk text only,
+  not the heading. A trailing "s" is allowed, which is how "NSAID" finds
+  "NSAIDs".
+  - A brand name stands in for its drug in the interaction scan, so a passage
+  that says "Coumadin" counts as mentioning warfarin.
+  - The class sentence is matched with `is in a (class|group) of ... called
+  <phrase>.`. The phrase and any parenthesised text become separate terms, split
+  on " and ". I did not keep the full phrase with its parentheses.
+  - Glossary results are single entries with exact line numbers. The glossary
+  file has CRLF line endings, so lines are right-stripped.
+  - `get_section` takes the section key as given (no lowercasing). An unknown
+  source gets a note listing valid sources.
+  - `search_corpus` requires the exact lowercase source and section keys, and
+  clamps `k` to at least 1.
+  - `Tools` exposes `drugs`, `brands`, `classes`, `sources`, `sections` and
+  `glossary` as public attributes, so the tests can read them.
+
+  **Deviations**
+  - The brief says to print the names and terms "for my report". I did that with
+  a scratch script outside the repo, so the repo has no printing code.
+  - I accidentally wrote a stray file outside the worktree and deleted it at
+  once. Nothing else was left behind.
+
+  **Skills and MCP servers used:** none (only Bash, Read, Write and Edit). I
+  read the golden-specs directory listing and found no relevant spec.
+
+  **Snags**
+  - The worktree-isolation guard refused one multi-command heredoc ("too complex
+  to verify"). I split the command and wrote the scratch script to the
+  scratchpad.
+  - The I4 test is flaky, as described above.
+  - The hypothesis example database persists failures between runs, which makes
+  a flake look like a hard failure.
+
+  **Wants**
+  - A repo-level `conftest.py` or pytest setting that gives Hypothesis a fixed
+  seed or disables the example database for CI.
+  - A stated rule for whether `tests/` is a package, so `from fakes import ...`
+  is a known pattern. It works today because pytest adds `tests/` to the import
+  path.
+
+  I ran with the ponytail-style minimal approach. What I did not check: lint or
+  format tools, and behaviour with a real embedder.
+
+● Bash(git diff --stat main...worktree-agent-ab97458f535c18bae | tail -7 && echo
+      "--- CRLF check ---" && for f in corpus/*.md; do n=$(grep -c $'\r' "$f");
+      [ "$n" != "0…)
+  ⎿   src/pharmag/tools.py | 206 ++++++++++++++++++++++++++++++++++++++++++
+     +++++++++
+      tests/PROPERTIES.md  |  13 ++++
+     … +213 lines (ctrl+o to expand)
+
+● Agent "Build the four tools" finished · 6m 2s
+  ⎿  Found 30 new diagnostic issues in 7 files (ctrl+o to expand)
+
+● Bash(echo "--- fakes.py (tools branch) ---" && git show
+      worktree-agent-ab97458f535c18bae:tests/fakes.py && echo "--- test_index.py
+      I4 region (tools branch) ---" && g…)
+  ⎿  --- fakes.py (tools branch) ---
+     import zlib
+     … +91 lines (ctrl+o to expand)
+
+● The tools builder has reported and its code reads well. I'm holding the merge
+  until the retrieval-eval builder finishes, because both touch
+  tests/PROPERTIES.md and the eval builder is working in the main checkout.
+
+  Three fixes are queued for the merge, all found in review:
+
+  - A flaky index test. The property "searching a chunk's own text returns it
+    first" is false for rank fusion, because BM25 can prefer a chunk that
+    repeats the query's words. The code is right and the property is wrong. I
+    will replace it with the true one, that the chunk ranks first by vector
+    similarity.
+  - Windows line endings in GLOSSARY.md. The file has CRLF on all 45 lines, so
+    glossary chunks carry \r characters. The tools builder worked around it. I
+    will fix it in the parser, since the later quote check needs clean text.
+  - One type wart in the glossary parsing.
+
+  The tools builder also reported what the corpus yields with nothing typed in
+  by hand: brand names for five of the ten drugs, for example Eliquis, Zoloft,
+  Coumadin and Lipitor, and class terms for all ten, for example "anticoagulant"
+  for warfarin and "ssri" for sertraline. find_interactions("warfarin", 
+  "sertraline") returns one warfarin passage and six sertraline passages.
+  ⎿  Stop says: ⏱ 41.2s (finished 17:29:16)
+
+
+● Teammate @retrieval-eval-builder failed: You've hit your 5-hour limit · resets
+9pm (Africa/Casablanca)
+  I'll start by reading the files named in the brief.
+  ⎿  You've hit your 5-hour limit · resets 9pm (Africa/Casablanca)
+     /upgrade or /usage-credits to finish what you’re working on.
+
+❯ continue. however this conversation is getting too long so try and wrap up    
+  what has already started before writing a handoff doc with enough context for 
+  the next session to start on a good basis.                                    
+
+● Understood. I'll finish the pieces already in flight, push, and then write the
+  handoff. First I'm checking what the interrupted eval builder left in the
+  main checkout.
+
+● Bash(echo "--- status ---" && git status --short && echo "--- uncommitted diff
+      stat (tracked files) ---" && git diff --stat | tail -6 && echo "--- eval
+      files ---" &&…)
+  ⎿  --- status ---
+      M .gitignore
+      M pyproject.toml
+     … +25 lines (ctrl+o to expand)
+
+● Bash(echo "--- diffs ---" && git diff .gitignore pyproject.toml | grep -E
+      '^[+-]' | grep -v -E '^(\+\+\+|---)' && echo "--- embedding_cache.py ---"
+      && cat evals/embe…)
+  ⎿  --- diffs ---
+     +
+     +# Embeddings cached by the eval scripts
+     … +234 lines (ctrl+o to expand)
+
+● Bash(uv run --locked pytest -q 2>&1 | tail -3 && sed -n '/^## Retrieval eval
+      baseline/,/^## Corpus parser/p' tests/PROPERTIES.md | cut -c1-330)
+  ⎿  ...................................................
+        [100%]
+     51 passed in 6.23s
+     … +26 lines (ctrl+o to expand)
+
+● Bash(S=/tmp/claude-1000/~-applications-sntx-work-test-pharmag/0be698
+      aa-996c-4dc6-b9bb-92255565895d/scratchpad && git add .gitignore
+      pyproject.toml tests/PR…)
+  ⎿  Auto-merging tests/PROPERTIES.md
+     tools merged
+     8dbc354 Merge the four tools into main
+     … +11 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      import re…)
+  ⎿  patched; new parser property number: 24
+     ...................................................................
+        [100%]
+     67 passed in 9.99s
+
+● Status: tools and eval script are merged, the three review fixes are in, and
+  67 tests pass. Checking that the formerly flaky test is now stable, then
+  running the retrieval eval live.
+
+● Bash(echo "--- index + tools tests under 8 different seeds ---" && for seed in
+      1 2 3 4 5 6 7 8; do uv run --locked pytest tests/test_index.py
+      tests/test_tools.py -q…)
+  ⎿  --- index + tools tests under 8 different seeds ---
+           1 26 passed in 6.73s
+           1 26 passed in 6.87s
+     … +33 lines (ctrl+o to expand)
+
+● Bash(echo "--- retrieval eval, run 2 (cache) ---" && uv run --locked
+      --env-file .env python evals/retrieval_eval.py 2>&1 | head -4 && ls
+      evals/results && git status…)
+  ⎿  --- retrieval eval, run 2 (cache) ---
+     ours: 451 chunks, 0 texts sent to the embedding model
+     ours: 0 queries sent to the embedding model
+     … +12 lines (ctrl+o to expand)
+
+● Status: all code that was in flight is merged, verified, and pushed (5b64e9d,
+  67 tests). Doing a last container check on the merged tree, then the manifest,
+  the private brief, and the handoff.
+
+● Bash((docker build -q -t agent . 2>&1 | tail -1) && docker run -d --rm --name
+      pharmag-final -p 8000:8000 --env-file .env agent >/dev/null && for i in
+      $(seq 1 30); do…)
+  ⎿  Error: Exit code 1
+     ERROR: failed to connect to the docker API at unix:///var/run/docker.sock; 
+     check if the path is correct and if the daemon is running: dial unix 
+     /var/run/docker.sock: connect: no such file or directory
+     failed to connect to the docker API at unix:///var/run/docker.sock; check 
+     if the path is correct and if the daemon is running: dial unix 
+     /var/run/docker.sock: connect: no such file or directory
+       [health http=000]
+     [ask http=000] [root http=000]
+     failed to connect to the docker API at unix:///var/run/docker.sock; check 
+     if the path is correct and if the daemon is running: dial unix 
+     /var/run/docker.sock: connect: no such file or directory
+     failed to connect to the docker API at unix:///var/run/docker.sock; check 
+     if the path is correct and if the daemon is running: dial unix 
+     /var/run/docker.sock: connect: no such file or directory
+
+● Bash(docker context ls 2>&1 | head -6; echo "---"; ls -la
+      ~/.docker/desktop/docker.sock 2>&1 | head -2; systemctl --user is-active
+      docker-desktop 2>&1 | head -1; sys…)
+  ⎿  NAME            DESCRIPTION                               DOCKER ENDPO
+     INT                                  ERROR
+     default *       Current DOCKER_HOST based configuration   unix:///var/
+     … +8 lines (ctrl+o to expand)
+
+● Bash(python3 -I - <<'EOF'
+      import re…)
+  ⎿  Config check (`load_settings`)              6 properties  (1 to 6)
+     Search index (Index.search)                 8 properties  (I1 to I8)
+     Server and page                             7 properties  (7 to 13)
+     … +14 lines (ctrl+o to expand)
+
+● Write(docs/handoff.md)
+  ⎿  Wrote 70 lines to docs/handoff.md
+       1 # Handoff
+       2 
+       3 Written on 2026-11-12 at the end of the first working session. R
+         ewrite this file before the next session stops.
+       4 
+       5 The deadline is 2026-11-13 at 23:59 Casablanca time, which is 22
+         :59 UTC if Morocco is on UTC+1 that day. The graders assess the 
+         last commit pushed before it.
+       6 
+       7 ## Read these first
+     … +63 lines (ctrl+o to expand)
+
+● Update(CLAUDE.md)  ⎿  Added 4 lines
+      10  - After you use a skill or an MCP server, copy it into `ai-conf
+          ig/` and add its row to `ai-config/README.md`.
+      11  - The main session plans, decides and verifies. Subagents do th
+          e mechanical work.
+      12  
+      13 +## Session handoff                                             
+      14 +                                                               
+      15 +`docs/handoff.md` holds the current state, what waits on the ow
+         +ner, and the next steps with their checks. Read it at the start
+         + of a session and rewrite it before you stop.                  
+      16 +                                                               
+      17  ## Public repo
+      18  
+      19  This repo is public. Write the LLM proxy hostname, key details 
+          and the assignment's own text only in `defense-brief.md`, which
+           `.gitignore` excludes. Tracked files paraphrase the assignment
+           and cite its page numbers.
+
+● Update(defense-brief.md)
+  ⎿  Added 11 lines
+      83  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+           [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      84  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+      85  
+      86 +[redacted: private notes]
+         +[redacted: private notes]
+      87 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      88 +[redacted: private notes]
+         +[redacted: private notes]
+      89 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+      90 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      91 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      92 +[redacted: private notes]
+         [redacted: private notes]
+         [redacted: private notes]
+      93 +[redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+         [redacted: private notes]
+         +[redacted: private notes]
+      94 +[redacted: private notes]
+         +[redacted: private notes]
+         [redacted: private notes]
+      95 +[redacted: private notes]
+         +[redacted: private notes]
+         +[redacted: private notes]
+      96 +                                                               
+      97  [redacted: private notes]
+      98  
+      99  [redacted: private notes]
+          [redacted: private notes]
+          [redacted: private notes]
+
+● Status: handoff written. Final scan, commit and push.
+
+● Bash(python3 -I - <<'EOF'
+      from pathlib import Path…)
+  ⎿  --- scans (expect 0 0 0) ---
+     0
+     0
+     … +7 lines (ctrl+o to expand)
+
+● Everything in flight is merged and pushed at 6aa9ce7, and the handoff is in
+  docs/handoff.md. One thing is not verified: the container has not been rebuilt
+  since the parser, index and tools landed, because Docker Desktop was not
+  running when I finished.
+
+  What exists on main
+
+  - Skeleton. Strict config check, /health, a placeholder /ask, the static page,
+    and the Dockerfile. It was verified with the graders' exact commands on
+    November 11.
+  - Corpus parser. It yields 451 chunks from the 21 files, capped at 5,000
+    characters, with no table split.
+  - Search index. NumPy embeddings and BM25 fused by rank. A live build took
+    10.3 seconds.
+  - Four tools. search_corpus, get_section, find_interactions and
+    lookup_glossary. Brand names and drug classes are extracted from the corpus,
+    with nothing typed in by hand.
+  - Retrieval eval. One live run over 13 gold files, with the raw question as
+    the query:
+
+  |                                | Heading-tree chunks | 1,000-character
+  windows |
+  |--------------------------------|---------------------|----------------------
+  ---|
+  | Recall at 6                    | 0.92                | 0.69
+    |
+  | Recall at 3 with a drug filter | 0.85                | 0.69
+    |
+    One file is 7.7 points and a larger chunk is easier to hit, so read the gap
+    as an indication. No search mode finds the warfarin table row for the
+    ibuprofen question, which is the case find_interactions covers.
+  - Tests. 67 pass.
+
+  Review fixes before the merge
+
+  - A false property. An index test failed about one run in six. The code was
+    right and the property was wrong, because rank fusion does not guarantee
+    that a chunk's own text returns it first. The test now asserts the true
+    property.
+  - Windows line endings. GLOSSARY.md uses them on every line. A builder had
+    worked around this in the tools, and I moved the fix into the parser.
+  - The interrupted eval builder. The usage limit ended it before it ran
+    anything. Its files were complete, so I ran the tests and the eval myself.
+
+  What waits on you
+
+  1. Go-ahead for the agents step. DEC-028 puts a check-in here.
+  2. Expected answers. evals/questions.json is still marked as a draft.
+  3. Properties. tests/PROPERTIES.md now lists 47 in six sections.
+  4. Choices of mine you can veto. The handoff file is tracked and public, and
+     CLAUDE.md now points to it. The others are Python 3.15, bm25s, httpx2, and
+     the 503 on a config error.
+
+  For the next session
+
+  The handoff lists the next steps in order, each with its check. The first is
+  to start Docker and rebuild the image. After that come the agents and
+  pipeline, the DeepEval answer eval, the interface, and the submission polish.
+  The deadline is November 13 at 23:59 Casablanca time.
+
+  Not checked: whole-question latency and cost, since no agent exists yet.
+  ⎿  Stop says: ⏱ 6m 32s (finished 07:07:10)

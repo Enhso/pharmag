@@ -66,6 +66,18 @@ Versions come from the Claude Code plugin registry on 2026-11-11. No plugin file
 | code-review, pr-review-toolkit | 1.0.1 | Installed, not used |
 | pyright-lsp, rust-analyzer-lsp, swift-lsp, typescript-lsp | 1.0.0 | Installed, not used |
 
+## Session transcripts
+
+`transcripts/` holds the terminal transcripts of the first two working sessions, published at the owner's request (DEC-036). An agent cleaned each file in place and left the line count unchanged. Every removal shows as a visible mark:
+
+| Mark | What it replaces |
+|---|---|
+| `[redacted: proxy host]`, `[redacted: chat model]`, `[redacted: chat model detail]`, `[redacted: proxy detail]` | The values of the env file, and details of the key and of the proxy account |
+| `[assignment text removed, p. N]` | A run of eight or more words shared with the assignment brief |
+| `[redacted: private notes]` | Lines of the private interview notes that a tool call displayed |
+| `[redacted: personal detail]` | A personal detail that is in no tracked file |
+| `~` and "the owner" | The home path and the owner's name |
+
 ## Keeping this folder current
 
 After a session uses a new skill or MCP server, copy it here and add its row. Regenerate the file count with `find ai-config -type f | wc -l`.

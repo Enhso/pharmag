@@ -1,0 +1,2357 @@
+ ▐▛███▛█   Claude Code v2.1.323
+▝▜██████▀  Fable 5.2 · Claude Pro
+ ▝▝   ▝▝   ~/applications/sntx/work-test/pharmag
+
+
+❯ /model fable                                                                  
+  ⎿  Set model to Fable 5.2 and saved as your default for new sessions
+
+❯ okay let's get this started back. i want to have a working poc at the end of  
+  this session which would be the lowest possible deliverable, in case things   
+  go awry tomorrow. look at the docs and pick up where we left off. one side    
+  quest for you: i need a visual overview of the project i can use in my        
+  presentation. find a pretty way to do that when the poc is done.              
+
+  Read 3 files (ctrl+o to expand)
+
+● Bash(git status --short && git log --oneline -15 && ls -la && ls docs
+      src/pharmag evals tests 2>/dev/null)
+  ⎿   M ai-config/README.md
+      M docs/decisions.md
+      M docs/handoff.md
+     … +78 lines (ctrl+o to expand)
+
+● Skill(pstack:poteto-mode)
+  ⎿  Successfully loaded skill
+
+  Read 2 files (ctrl+o to expand)
+
+● Bash(wc -l src/pharmag/*.py src/pharmag/static/* tests/*.py evals/*.py
+      pyproject.toml Dockerfile ai-config/README.md && cat pyproject.toml
+      Dockerfile && ls ~/.womm-s…)
+  ⎿     61 src/pharmag/api.py
+        61 src/pharmag/config.py
+       168 src/pharmag/corpus.py
+     … +76 lines (ctrl+o to expand)
+
+● Your container is aimed to be ready tonight, pushed to main, with the agents,
+  grounding checks, /ask and a simple results page still missing; I'm reading
+  the code and PydanticAI docs now, with the DEC-028 numbers (recall@6 of 0.92
+  versus 0.69) logged as your go-ahead. · summary
+
+  Read 5 files (ctrl+o to expand)
+
+● Bash(docker build -t agent . >
+      "/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d873
+      -c136-46a8-a806-39a3d74fb507/scratchpad/docker-baseline.log"…)
+  ⎿  Running in the background (↓ to manage)
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(cat src/pharmag/static/app.js src/pharmag/static/index.html
+      tests/fakes.py; sed -n 1,40p tests/test_api.py; echo ---; du -sh
+      ai-config/transcripts; ls -la ai-co…)
+  ⎿  const form = document.getElementById("ask-form");
+     const input = document.getElementById("question");
+     const button = form.querySelector("button");
+     … +151 lines (ctrl+o to expand)
+
+  Called context7 (ctrl+o to expand)
+
+● Bash(set -a; . ./.env; set +a; host=$(python3 -c "import os,urllib.parse as u;
+      print(u.urlparse(os.environ['OPENAI_BASE_URL']).hostname)"); for f in
+      ai-config/transc…)
+  ⎿  ai-config/transcripts/2026-11-11a.txt host=3 key=0
+     tests/PROPERTIES_findings.md host=0 key=0
+     docs/handoff.md host=0 key=0
+     … +23 lines (ctrl+o to expand)
+
+● Background command "Rebuild the container image on the merged tree" completed
+(exit code 0)
+
+  Called context7 2 times (ctrl+o to expand)
+
+● Bash(cat "/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b
+      1d873-c136-46a8-a806-39a3d74fb507/tasks/b0ysiihzi.output"; tail -3
+      "/tmp/claude-1000/-h…)
+  ⎿  exit=0
+
+     [exited with code 0]
+     … +5 lines (ctrl+o to expand)
+
+● Bash(uv add "pydantic-ai-slim[openai]==2.67.0" 2>&1 | tail -15; git status
+      --short)
+  ⎿  Prepared 9 packages in 1.25s
+     Uninstalled 1 package in 0.88ms
+     Installed 12 packages in 5ms
+     … +21 lines (ctrl+o to expand)
+
+● Bash(sed -n 1,60p
+      ~/.womm-skills/golden-specs/PYTHON_MODULE_LEVEL_IMPORT_PATCHING.md; grep
+      -n "docker\|curl" defense-brief.md | head -20; grep -c ""
+      tests/PROPERTIES…)
+  ⎿  # Python Module-Level Import Patching
+
+     When a downstream module does `from x import name` at the top, it capt
+     … +75 lines (ctrl+o to expand)
+
+● Baseline image builds and the PydanticAI pin are resolved; I'm writing the
+  type contract (models.py and stub signatures for agents.py and pipeline.py) so
+  two builders can work in parallel. · summary
+
+● Bash(uv run --locked python - <<'EOF' 2>&1 | head -60
+      import inspect, pydantic_ai…)
+  ⎿  2.67.0
+     ['self', 'user_prompt', 'output_type', 'conversation', 'message_histor
+     y', 'deferred_tool_results', 'conversation_id', 'run_id', 'model', 'in
+     … +17 lines (ctrl+o to expand)
+
+● Bash(grep -n "^def \|^async def \|^class \|^[A-Z_]* = " src/pharmag/corpus.py
+      evals/retrieval_eval.py | head -40; sed -n 1,15p tests/PROPERTIES.md; sed
+      -n 28,37p tes…)
+  ⎿  src/pharmag/corpus.py:7:MAX_CHARS = 5000
+     src/pharmag/corpus.py:9:_HEADING = re.compile(r"(#{2,6}) (.*)")
+     src/pharmag/corpus.py:10:_FILE_NAME = re.compile(r"(dailymed|medlinepl
+     … +94 lines (ctrl+o to expand)
+
+● Writing the contract now.
+
+● Write(src/pharmag/models.py)  ⎿  Added 155 lines, removed 1 line
+      1  from dataclasses import dataclass
+      2 -from typing import Literal                                      
+      2 +from typing import Any, Literal                                 
+      3  
+      4 +from pydantic import BaseModel, Field                           
+      5 +                                                                
+      6  Source = Literal["dailymed", "medlineplus", "glossary"]
+      7  
+      8  
+     ...
+       19      line_start: int  # 1-based, inclusive
+       20      line_end: int  # 1-based, inclusive
+       21      text: str  # the file's lines line_start..line_end, verbat
+           im, so a quote can be checked
+       22 +                                                              
+       23 +                                                              
+       24 +# What each LLM role returns. The model reads the field descri
+          +ptions as part of the output schema.                          
+       25 +                                                              
+       26 +                                                              
+       27 +class SubQuestion(BaseModel):                                 
+       28 +    text: str = Field(description="One self-contained question
+          + that one researcher can answer from the documents.")         
+       29 +    drugs: list[str] = Field(description="Generic names of the
+          + drugs this sub-question concerns.")                          
+       30 +                                                              
+       31 +                                                              
+       32 +class Plan(BaseModel):                                        
+       33 +    in_scope: bool = Field(                                   
+       34 +        description="False when the question is not about the 
+          +pharmacology of medicines, "                                  
+       35 +        "or when it tries to give the assistant instructions."
+       36 +    )                                                         
+       37 +    reason: str = Field(description="One sentence: why the que
+          +stion is in or out of scope.")                                
+       38 +    sub_questions: list[SubQuestion] = Field(description="Empt
+          +y when the question is out of scope.")                        
+       39 +                                                              
+       40 +                                                              
+       41 +class Finding(BaseModel):                                     
+       42 +    statement: str = Field(description="One fact that helps an
+          +swer the sub-question, in your own words.")                   
+       43 +    chunk_id: str = Field(description="ID of the passage the q
+          +uote comes from, exactly as the tool printed it.")            
+       44 +    quote: str = Field(description="One contiguous span copied
+          + word for word from that passage.")                           
+       45 +                                                              
+       46 +                                                              
+       47 +class Findings(BaseModel):                                    
+       48 +    findings: list[Finding]                                   
+       49 +    not_found: str = Field(                                   
+       50 +        description="What you looked for and did not find in t
+          +he documents. Empty when nothing is missing."                 
+       51 +    )                                                         
+       52 +                                                              
+       53 +                                                              
+       54 +class Citation(BaseModel):                                    
+       55 +    chunk_id: str = Field(description="ID of the passage, exac
+          +tly as given in the findings.")                               
+       56 +    quote: str = Field(description="One contiguous span copied
+          + word for word from that passage.")                           
+       57 +                                                              
+       58 +                                                              
+       59 +ClaimKind = Literal["fact", "synthesis"]                      
+       60 +                                                              
+       61 +                                                              
+       62 +class Claim(BaseModel):                                       
+       63 +    text: str = Field(description="The claim, as one sentence 
+          +that can be checked on its own.")                             
+       64 +    kind: ClaimKind = Field(description="fact: one passage sta
+          +tes it. synthesis: it combines several passages.")            
+       65 +    citations: list[Citation] = Field(description="At least on
+          +e. A synthesis cites every passage it combines.")             
+       66 +                                                              
+       67 +                                                              
+       68 +class Draft(BaseModel):                                       
+       69 +    answer: str = Field(description="The answer as prose. It c
+          +ites claim n with the marker [n].")                           
+       70 +    claims: list[Claim] = Field(description="Claim n is the n-
+          +th item of this list, counting from 1.")                      
+       71 +                                                              
+       72 +                                                              
+       73 +Status = Literal["supported", "unsupported", "ambiguous"]     
+       74 +                                                              
+       75 +                                                              
+       76 +class ClaimVerdict(BaseModel):                                
+       77 +    claim: int = Field(description="The claim's marker number,
+          + counting from 1.")                                           
+       78 +    status: Status = Field(                                   
+       79 +        description="supported: the cited passages state it. u
+          +nsupported: they do not. "                                    
+       80 +        "ambiguous: they allow it only under a reading or a cl
+          +inical judgment the claim does not state."                    
+       81 +    )                                                         
+       82 +    reason: str = Field(description="One sentence that names t
+          +he evidence checked.")                                        
+       83 +    follow_up: str | None = Field(                            
+       84 +        default=None, description="For an unsupported claim: a
+          + search query that could find the missing evidence."          
+       85 +    )                                                         
+       86 +                                                              
+       87 +                                                              
+       88 +class Review(BaseModel):                                      
+       89 +    verdicts: list[ClaimVerdict] = Field(description="Exactly 
+          +one verdict per claim.")                                      
+       90 +    unmarked: list[str] = Field(                              
+       91 +        description="Each factual statement in the prose that 
+          +carries no marker, copied from the prose."                    
+       92 +    )                                                         
+       93 +                                                              
+       94 +                                                              
+       95 +# What /ask returns.                                          
+       96 +                                                              
+       97 +                                                              
+       98 +class ToolHit(BaseModel):                                     
+       99 +    chunk_id: str                                             
+      100 +    score: float | None = None  # search_corpus only          
+      101 +                                                              
+      102 +                                                              
+      103 +class ToolCall(BaseModel):                                    
+      104 +    worker: str  # the sub-question or follow-up query the wor
+          +ker was researching                                           
+      105 +    tool: str                                                 
+      106 +    args: dict[str, Any]                                      
+      107 +    hits: list[ToolHit]                                       
+      108 +    note: str                                                 
+      109 +                                                              
+      110 +                                                              
+      111 +class SourceCitation(BaseModel):                              
+      112 +    marker: int                                               
+      113 +    claim: str                                                
+      114 +    kind: ClaimKind                                           
+      115 +    status: Literal["supported", "ambiguous"]                 
+      116 +    file: str  # exact corpus file name                       
+      117 +    section: str  # heading path joined with " > "            
+      118 +    line_start: int                                           
+      119 +    line_end: int                                             
+      120 +    quote: str                                                
+      121 +                                                              
+      122 +                                                              
+      123 +class RemovedClaim(BaseModel):                                
+      124 +    text: str                                                 
+      125 +    reason: str                                               
+      126 +                                                              
+      127 +                                                              
+      128 +class Caution(BaseModel):                                     
+      129 +    marker: int                                               
+      130 +    text: str                                                 
+      131 +    reason: str                                               
+      132 +                                                              
+      133 +                                                              
+      134 +class CriticReport(BaseModel):                                
+      135 +    review_rounds: int  # 0 for a refusal, 1, or 2 after the r
+          +etry                                                          
+      136 +    verdicts: list[ClaimVerdict]  # final verdict of each clai
+          +m of the final draft                                          
+      137 +    removed: list[RemovedClaim]  # unsupported after the retry
+          +, so taken out of the answer                                  
+      138 +    cautions: list[Caution]  # ambiguous, so kept in the answe
+          +r with this caution                                           
+      139 +    unmarked: list[str]  # statements the critic found with no
+          + marker; the redaction removes them                           
+      140 +    marker_check: Literal["passed", "repaired"]  # repaired: c
+          +ode had to drop a sentence with a dangling marker             
+      141 +                                                              
+      142 +                                                              
+      143 +class RoleUsage(BaseModel):                                   
+      144 +    requests: int = 0                                         
+      145 +    input_tokens: int = 0  # includes the cached ones         
+      146 +    cached_input_tokens: int = 0                              
+      147 +    output_tokens: int = 0                                    
+      148 +                                                              
+      149 +                                                              
+      150 +class Usage(RoleUsage):                                       
+      151 +    by_role: dict[str, RoleUsage] = {}                        
+      152 +                                                              
+      153 +                                                              
+      154 +class AskResponse(BaseModel):                                 
+      155 +    answer: str  # prose with [n] markers, then cautions, the 
+          +numbered source list, and the disclaimer                      
+      156 +    sources: list[str]  # corpus files cited by the claims lef
+          +t in the answer, in order of first use                        
+      157 +    citations: list[SourceCitation]                           
+      158 +    plan: Plan                                                
+      159 +    tool_calls: list[ToolCall]                                
+      160 +    critic: CriticReport                                      
+      161 +    disclaimer: str                                           
+      162 +    timings: dict[str, float]  # seconds per stage, plus "tota
+          +l"                                                            
+      163 +    usage: Usage                                              
+      164 +                                                              
+      165 +                                                              
+      166 +Stage = Literal["plan", "research", "write", "quote_check", "r
+          +eview", "retry", "redact", "respond"]                         
+      167 +                                                              
+      168 +                                                              
+      169 +class TraceEvent(BaseModel):                                  
+      170 +    stage: Stage                                              
+      171 +    kind: str  # "started", "finished", "tool_call", ...      
+      172 +    data: dict[str, Any]                                      
+      173 +    elapsed: float  # seconds since the request started       
+
+● Write(src/pharmag/agents.py)
+  ⎿  Wrote 19 lines to src/pharmag/agents.py
+       1 from dataclasses import dataclass
+       2 
+       3 from pydantic_ai.models import Model
+       4 
+       5 from pharmag.config import Settings
+       6 
+       7 
+       8 @dataclass(frozen=True)
+       9 class RoleModels:
+      10     """One chat model per role. All four share the key and the b
+     … +10 lines (ctrl+o to expand)
+
+● Write(src/pharmag/pipeline.py)
+  ⎿  Wrote 46 lines to src/pharmag/pipeline.py
+       1 from collections.abc import Callable, Mapping
+       2 from dataclasses import dataclass
+       3 from pathlib import Path
+       4 
+       5 from pharmag.agents import RoleModels
+       6 from pharmag.config import Settings
+       7 from pharmag.models import AskResponse, Chunk, Stage, TraceEvent
+       8 from pharmag.tools import Tools
+       9 
+      10 DISCLAIMER = (
+     … +36 lines (ctrl+o to expand)
+
+● Bash(set -a; . ./.env; set +a; host=$(python3 -c "import os,urllib.parse as u;
+      print(u.urlparse(os.environ['OPENAI_BASE_URL']).hostname)"); git add
+      ai-config/README.…)
+  ⎿  0
+      docs/handoff.md                                    |  46 +++-
+      tests/PROPERTIES_findings.md                       | 286 ++++++++++++
+     … +31 lines (ctrl+o to expand)
+  ⎿  Found 5 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Bash(git commit -q -F - <<'EOF'
+      Record the property review and the skill it used…)
+  ⎿  55199a0 Record the property review and the skill it used
+      M pyproject.toml
+      M src/pharmag/models.py
+     … +4 lines (ctrl+o to expand)
+
+● Bash(cat >> docs/decisions.md <<'EOF'…)
+  ⎿  0
+      docs/decisions.md       |  15 ++++
+      pyproject.toml          |   1 +
+     … +7 lines (ctrl+o to expand)
+
+● Bash(git commit -q -F - <<'EOF'
+      Add the pipeline's type contract and pin PydanticAI…)
+  ⎿  1cf7f17 Add the pipeline's type contract and pin PydanticAI
+     55199a0 Record the property review and the skill it used
+     ## main...origin/main
+     ?? ai-config/transcripts/
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Contract is pushed. Next I brief two builders in parallel: one for the agents
+  and pipeline, one for the API wiring, page and README.
+
+● Bash(pdftotext -layout docs/assignment-pharma.pdf - 2>/dev/null | grep -n -i
+      "docker \|curl \|--env-file" | head -10)
+  ⎿  69:       • [assignment text removed, p. 2]
+     [assignment text removed, p. 2]
+
+● 2 background agents launched (↓ to manage)
+   ├ pipeline-builder: Build agents, grounding, pipeline
+   └ api-builder: Wire API, page, config, README
+
+● Both builders are running in their own worktrees. While they work I'm
+  preparing the live-check script for the eval questions and looking at how to
+  build the presentation overview.
+
+● Artifact(quickstart other)
+  ⎿  sent page-design guidance
+
+● Bash(python3 - <<'EOF'
+      import json…)
+  ⎿  <class 'dict'> ['status', 'fields', 'questions']
+     {
+      "id": "P1",
+     … +36 lines (ctrl+o to expand)
+
+  Made 1 scratchpad edit +62, searched for 1 pattern (ctrl+o to expand)
+
+● Skill(artifact-diagramming)
+  ⎿  Successfully loaded skill
+
+● Builders are still running, so I'm drafting the presentation overview now and
+  will add the measured results once the live runs finish. · summary
+
+  Made 1 scratchpad edit +339 (ctrl+o to expand)
+  ⎿  Found 21 new diagnostic issues in 4 files (ctrl+o to expand)
+
+● Bash(sed -n 1,68p ai-config/README.md | cut -c1-330; ls ai-config
+      ai-config/skills | head -40)
+  ⎿  # AI coding configuration
+
+     This folder holds the AI coding configuration behind this repo, as the
+     … +79 lines (ctrl+o to expand)
+
+● Both builders are still working. The overview page is drafted in the
+  scratchpad and waits for tonight's measured results before I publish it. I'll
+  pick up as soon as the first builder reports.
+  ⎿  Stop says: ⏱ 12m 43s (finished 20:13:30)
+
+✻ Worked for 14m 29s · done Thursday 19:13
+
+› Message from api-builder
+  **Difficulty:** moderate. The pieces are small, but they cut across config,
+  async lifecycle, the page, docs and tests.
+
+  **Built.** Branch worktree `~/applications/sntx/work-test/pharmag/.c
+  laude/worktrees/agent-a91e49e0d14b2ad7f`, 3 commits (`4eb041b`, `71b2ebc`,
+  `08b77d1`). Commit messages are plain sentences with no trailers.
+
+  - **`src/pharmag/config.py`**: `Settings` has four new fields,
+  `planner_model`, `worker_model`, `writer_model` and `critic_model`. An unset
+  `PHARMAG_*_MODEL` falls back to `OPENAI_MODEL`. A set override goes through
+  the same strict checks as the required variables.
+  - **`src/pharmag/api.py`**:
+    - An `EngineBuild` object on `app.state.build` owns the task and exposes
+  `state`, `error` and `async engine()`. `engine()` waits for a running build
+  and starts a new one if the last build failed. The build task is shielded from
+  client disconnects, and `stop()` cancels it on shutdown.
+    - A build makes 4 attempts with pauses from the module constant
+  `RETRY_PAUSES = (1, 2, 4)`, which tests patch to zeros. `CORPUS_DIR =
+  Path("corpus")`.
+    - With a defective config no build starts and `app.state.build` is `None`.
+    - `/health` returns `{"status": "ok", "index": ...}` plus `index_error` when
+  failed, or the old degraded body for a defective config.
+    - `/ask` is async. It returns 503 for config, 503 `{"error": "index",
+  "detail"}`, 502 `{"error": "pipeline", "stage", "detail"}`, or the
+  `AskResponse` with 200.
+    - `_scrub` replaces the API key in the build error text and the pipeline
+  detail.
+    - `DISCLAIMER` is imported from `pharmag.pipeline`, so `from pharmag.api
+  import DISCLAIMER` still works.
+  - **Page** (`src/pharmag/static/app.js` and `style.css`):
+    - It renders the answer with `pre-wrap`, the sources, four collapsed
+  `<details>` blocks (Evidence, Plan, Tool calls, Critic), and a stats line with
+  total time and tokens.
+    - While waiting it shows the "a minute or more" message with elapsed
+  seconds.
+    - Errors cover the config, 503 index and 502 pipeline cases.
+    - It uses `textContent` only and loads nothing from another host. I ran the
+  rendering code against a stub DOM in node with a realistic body and the two
+  error bodies.
+  - **`README.md`** and **`.env.example`**: written as specified, with no eval
+  numbers, no real hostname and no key.
+  - **`tests/PROPERTIES.md`**: properties 1, 2, 7, 8 and 11 were reworded in
+  place. I added C7 and C8 in the config section and S14 to S18 in the server
+  section. Nothing was added after the last section.
+  - **Tests**:
+    - `tests/test_api.py` fakes `pharmag.api.build_engine`, `pharmag.api.answer`
+  and `pharmag.api.RETRY_PAUSES` where they are used. It covers building then
+  ready, ask waiting for the build, fail-all then rebuild, fail-twice then
+  succeed, 502, key scrubbing, and no build for a defective config. A Hypothesis
+  property covers `_scrub`.
+    - `tests/test_config.py` extends the existing Hypothesis environments to
+  cover the overrides, and adds two example tests.
+    - The placeholder test is removed.
+
+  **Test run** (`uv run --locked pytest -q`):
+  ```
+  ........................................................................ [
+  94%]
+  ....
+  [100%]
+  76 passed in 12.34s
+  ```
+  That is 67 existing tests, minus the removed placeholder, plus the new ones.
+
+  **Things to know or that I decided:**
+  - `Settings` now has 8 required positional fields with no defaults. Any code
+  from the pipeline builder that builds `Settings(...)` with the old 4 fields
+  will fail after the merge. Test code should build one through `load_settings`,
+  or pass all 8 fields. I did not add defaults because a default cannot refer
+  to `model`.
+  - `.dockerignore` has `.env.*`, which also excludes `.env.example` from the
+  docker build context. That is harmless, since the image does not need it, and
+  I did not touch that file. `.gitignore` does not exclude it (`git
+  check-ignore` returned nothing).
+  - When a build has failed, the first `/ask` starts a new build and, if that
+  fails too, gets 503. The next `/ask` retries again. My test uses
+  `fail_first=8` for this reason.
+  - `engine()` reads the build's result from the task, so there is no race with
+  a concurrent restart.
+  - I did not read the FastAPI or Starlette docs through context7. I used only
+  the standard `lifespan` plus `asyncio.create_task` pattern, which the existing
+  code already used, and the tests exercise start and shutdown through
+  `TestClient`.
+  - I did not add the `Claude-Session:` trailer from the system reminder,
+  because the brief and `CLAUDE.md` ask for plain commit sentences.
+  - The CSS rule `.disclaimer` became `.stats`, because the page no longer
+  renders `disclaimer` separately.
+
+  **Snags**
+  - The Bash tool refused a compound command (a heredoc, a python script and
+  several other commands) as "too complex to verify inside the worktree". I
+  split it into separate calls.
+  - The system reminder's commit trailer instruction conflicts with the brief's
+  "no trailers" rule.
+
+  **Wants**
+  - A page test harness. I used a hand-written stub DOM in node and did not
+  commit it. A committed jsdom or playwright smoke test would be better.
+
+  **Distress**
+  - None.
+
+● Bash(git worktree list; W=.claude/worktrees/agent-a91e49e0d14b2ad7f; git -C $W
+      log --oneline -4; git -C $W status --short | head; git diff --stat
+      main...$(git -C $W…)
+  ⎿  ~/applications/sntx/work-test/pharmag
+                         1cf7f17 [main]
+     ~/applications/sntx/work-test/pharmag/.claude/worktrees/agen
+     … +15 lines (ctrl+o to expand)
+
+● Agent "Wire API, page, config, README" finished · 4m 43s
+● Bash(B=worktree-agent-a91e49e0d14b2ad7f; git show $B:src/pharmag/api.py; echo
+      ======; git diff main...$B -- src/pharmag/config.py)
+  ⎿  import asyncio
+     import os
+     from contextlib import asynccontextmanager, suppress
+     … +172 lines (ctrl+o to expand)
+
+● Bash(B=worktree-agent-a91e49e0d14b2ad7f; git show $B:src/pharmag/static/app.js
+      | sed -n 1,140p; echo ======; git show $B:README.md; echo ======; git
+      show $B:.env.exa…)
+  ⎿  const form = document.getElementById("ask-form");
+     const input = document.getElementById("question");
+     const button = form.querySelector("button");
+     … +253 lines (ctrl+o to expand)
+
+● Bash(git show main:README.md; echo; git merge --no-ff -q
+      worktree-agent-a91e49e0d14b2ad7f -m "Merge the API wiring, the page, and
+      the README into main" && uv run --l…)
+  ⎿  # pharmag
+     Pharmacology Hybrid Agent for Retrieval &amp; Multi-hop Analysis
+     … +4 lines (ctrl+o to expand)
+
+● Bash(git commit -q --amend -m "Merge the API wiring, the page, and the README
+      into main" -m "Claude-Session:
+      https://claude.ai/code/session_01MhmCCRp21T4oBVpPGj7bEf"…)
+  ⎿  Deleted branch worktree-agent-a91e49e0d14b2ad7f (was 08b77d1).
+     ~/applications/sntx/work-test/pharmag
+                         9424787 [main]
+     … +2 lines (ctrl+o to expand)
+
+● The API wiring, page, config overrides and README are merged locally, and I
+  reran the suite myself: 76 tests pass. Nothing is pushed yet, because /ask on
+  main needs the pipeline that the second builder is still writing. I'll merge
+  and run the live checks as soon as it reports.
+  ⎿  Stop says: ⏱ 51.5s (finished 20:14:28)
+
+✻ Churned for 57s · done Thursday 19:14
+
+› Message from pipeline-builder
+  Report: pharmag agents, grounding and pipeline
+
+  **Difficulty:** hard. Four agents, grounding checks and a multi-stage retry
+  pipeline had to fit one type contract, and the PydanticAI 2.67 API is newer
+  than my training data.
+
+  **Built** (branch of worktree `~/applications/sntx/work-test/pharmag
+  /.claude/worktrees/agent-a6d5c1b3cc5b565a7`, 3 commits):
+  - `src/pharmag/grounding.py` (new): `normalize`, `quote_occurs`,
+  `failed_claims`, `markers`, `dangling_markers`, `drop_dangling`. The
+  sentence-splitting limit is marked with a `# shortcut:` comment.
+  - `src/pharmag/agents.py`: `build_models`, `WorkerDeps`, `BUDGET_MESSAGE`, and
+  the four module-level agents with no model bound. Each has
+  `retries={"output": 2}`. The planner and worker add the drug list, section
+  keys and sources through `@agent.instructions` over deps. The planner's deps
+  are `Tools`; the worker's are `WorkerDeps`. The four worker tools are thin
+  wrappers that:
+    - count the call;
+    - record a `ToolCall`;
+    - add the returned chunks to the evidence;
+    - call `on_call` for the trace event;
+    - return plain text, one block per passage, with the note last.
+
+    When the budget is used up, a wrapper returns `BUDGET_MESSAGE` and does not
+  raise. The prompts follow your brief.
+  - `src/pharmag/pipeline.py`: `build_engine`, `answer`, and one private
+  `_Request` object that holds the evidence, tool calls, usage, timings and
+  `emit`.
+    - Stages run as plain sequential code. A `stage()` context manager times
+  each one, emits started/finished, and turns any exception into
+  `PipelineError`.
+    - A failed worker becomes empty `Findings` with the error in `not_found`.
+    - Usage is logged per run on `pharmag.pipeline`, with a warning when a
+  role's cache hit rate drops by more than 0.25.
+  - Tests: `tests/test_grounding.py` and `tests/test_pipeline.py`, plus 12 new
+  lines (25 to 36) under `## Grounding and pipeline` at the end of
+  `tests/PROPERTIES.md`. Properties 25 to 28 are the four Hypothesis properties.
+  I also ran them at 20,000 examples each with no failure.
+
+  **Proof:** `uv run --locked pytest -q` in the worktree gives `80 passed in
+  11.80s`, up from 67. `build_models` smoke-tested with a stand-in settings
+  object: the four model names map to the four roles. I did not make any live
+  calls. Not yet run: `build_models` and `build_engine` against the real
+  `Settings`, since your worktree lacks the four `*_model` fields.
+
+  **Changes to existing code**
+  - `models.py` is unchanged.
+  - `Engine` gained a last field, `cache_rates: dict[str, float]`, with a
+  default. It holds the last cache hit rate per role for the warning, and
+  existing calls still work.
+  - `pipeline.py` imports the private `_section_path` from `tools.py`, to avoid
+  copying the section-path string.
+  - `agents.py` now defines `RoleModels` itself (same shape) and adds
+  `WorkerDeps` and `BUDGET_MESSAGE`.
+
+  **Decisions I made that the brief left open**
+  - The dangling-marker check runs on every final prose, not only after a
+  redaction. A supported draft that cites `[7]` with 3 claims is repaired too.
+  - A claim with several citations gets one `Sources:` line per citation, each
+  under its marker. The brief said one line per cited marker.
+  - Cautions list only ambiguous claims whose marker is in the final prose.
+  - A critic "unsupported" verdict with no `follow_up` falls back to the claim
+  text. Unmarked statements are used as retry queries.
+  - The worker's request backstop is `MAX_TOOL_CALLS + 5`
+  (`WORKER_REQUEST_LIMIT` in `pipeline.py`). A worker that hits it is treated as
+  a failed worker, so its findings so far are lost.
+  - The writer prompt tells it to put the marker before the final punctuation.
+  That keeps a marker inside its own sentence, so `drop_dangling` cuts the right
+  sentence.
+  - The `search_corpus` wrapper does not expose `k`, so the default of 6
+  applies.
+  - Tests dated numbers 25 to 36, following the last numeric label, 24. "Server
+  and page" uses 7 to 13, so the other builder's merge may collide on numbering.
+
+  **Snags**
+  - The worktree sandbox refused a long compound command (a heredoc plus
+  pytest), so I wrote files with Write.
+  - `Settings` lacks the four model fields in this worktree, so I could not test
+  `build_models` against real settings.
+
+  **Wants**
+  - A `FunctionModel` helper for scripted structured replies. I wrote a 10-line
+  `scripted()` in the tests.
+
+  **Distress:** none.
+
+● Bash(B=worktree-agent-a6d5c1b3cc5b565a7; git log --oneline main..$B; git diff
+      --stat main...$B | tail -8; git show $B:src/pharmag/grounding.py)
+  ⎿  2551510 Add the pipeline tests and the grounding and pipeline property
+      catalogue
+     32c5b15 Add the four agents and the pipeline that runs them
+     … +63 lines (ctrl+o to expand)
+
+● Agent "Build agents, grounding, pipeline" finished · 8m 4s
+  ⎿  Found 7 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● Bash(git show worktree-agent-a6d5c1b3cc5b565a7:src/pharmag/agents.py)
+  ⎿  from collections.abc import Callable, Mapping
+     from dataclasses import dataclass
+     … +248 lines (ctrl+o to expand)
+
+● Bash(git show worktree-agent-a6d5c1b3cc5b565a7:src/pharmag/pipeline.py)
+  ⎿  import asyncio
+     import logging
+     import time
+     … +337 lines (ctrl+o to expand)
+
+● Bash(git merge --no-ff -q worktree-agent-a6d5c1b3cc5b565a7 -m "Merge the
+      agents, the grounding checks, and the pipeline into main" -m
+      "Claude-Session: https://claude…)
+  ⎿  Auto-merging tests/PROPERTIES.md
+     ?? ai-config/transcripts/
+     ......................................................................
+     … +75 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; setsid nohup uv run --locked
+      --env-file .e…)
+  ⎿  {"status":"ok","index":"ready"} after 4s
+
+● Both builder branches are merged and 89 tests pass. The server is up with the
+  real environment and the index built in 4 seconds, so I'm now running the
+  first live question end to end.
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; uv run --locked python
+      "$S/live_check.py"…)
+  ⎿  {
+       "id": "P1",
+       "status": 200,
+     … +42 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; uv run --locked python
+      "$S/live_check.py"…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(grep -n "follow_up or claim.text\|source_lines = \|results = await
+      asyncio.gather\|return \[(label, r)\|except Exception as e:  # one
+      failed\|return Findings(fi…)
+  ⎿  165:            except Exception as e:  # one failed worker must not f
+     ail the request
+     166:                return Findings(findings=[], not_found=f"The resea
+     … +61 lines (ctrl+o to expand)
+
+● Bash(sed -n 1,58p tests/test_pipeline.py; sed -n 178,200p
+      tests/test_pipeline.py; sed -n 100,101p tests/PROPERTIES.md)
+  ⎿  import asyncio
+     from pathlib import Path
+     … +75 lines (ctrl+o to expand)
+
+● Update(src/pharmag/pipeline.py)
+  ⎿  Added 1 line, removed 1 line
+      148      """One worker per (label, prompt), at most MAX_WORKERS at 
+           once. A failed worker reports itself in not_found."""
+      149      gate = asyncio.Semaphore(MAX_WORKERS)
+      150  
+      151 -    async def one(label: str, prompt: str) -> Findings:       
+      151 +    async def one(label: str, prompt: str) -> Findings | Excep
+          +tion:                                                         
+      152          async with gate:
+      153              deps = WorkerDeps(
+      154                  tools=req.engine.tools,
+
+● Update(src/pharmag/pipeline.py)
+  ⎿  Added 13 lines, removed 2 lines
+      163                  limits = UsageLimits(request_limit=WORKER_REQU
+           EST_LIMIT)
+      164                  return await req.run("worker", worker, prompt,
+            deps=deps, usage_limits=limits)
+      165              except Exception as e:  # one failed worker must n
+           ot fail the request
+      166 -                return Findings(findings=[], not_found=f"The r
+          -esearch failed: {type(e).__name__}: {e}")                     
+      166 +                return e                                      
+      167  
+      168      results = await asyncio.gather(*(one(label, prompt) for la
+           bel, prompt in tasks))
+      169 -    return [(label, r) for (label, _), r in zip(tasks, results
+          -)]                                                            
+      169 +    failures = [r for r in results if isinstance(r, Exception)
+          +]                                                             
+      170 +    if tasks and len(failures) == len(tasks):                 
+      171 +        raise failures[0]  # an outage must not read as "the d
+          +ocuments lack it"                                             
+      172 +    return [                                                  
+      173 +        (                                                     
+      174 +            label,                                            
+      175 +            Findings(findings=[], not_found=f"The research fai
+          +led: {type(r).__name__}: {r}")                                
+      176 +            if isinstance(r, Exception)                       
+      177 +            else r,                                           
+      178 +        )                                                     
+      179 +        for (label, _), r in zip(tasks, results)              
+      180 +    ]                                                         
+      181  
+      182  
+      183  def _findings_text(pairs: list[tuple[str, Findings]]) -> str:
+
+● Update(src/pharmag/pipeline.py)
+  ⎿  Added 3 lines, removed 1 line
+      221          if n in failed:
+      222              verdicts.append(ClaimVerdict(claim=n, status="unsu
+           pported", reason=failed[n], follow_up=claim.text))
+      223          elif n in given:
+      224 -            verdicts.append(given[n].model_copy(update={"follo
+          -w_up": given[n].follow_up or claim.text}))                    
+      224 +            v = given[n]                                      
+      225 +            follow_up = (v.follow_up or claim.text) if v.statu
+          +s == "unsupported" else None                                  
+      226 +            verdicts.append(v.model_copy(update={"follow_up": 
+          +follow_up}))                                                  
+      227          else:
+      228              verdicts.append(
+      229                  ClaimVerdict(claim=n, status="unsupported", re
+           ason="The critic gave no verdict.", follow_up=claim.text)
+● Update(src/pharmag/pipeline.py)
+  ⎿  Added 6 lines, removed 1 line
+      338              unmarked=unmarked,
+      339              marker_check=marker_check,
+      340          )
+      341 -        source_lines = [f"[{c.marker}] {c.file}, {c.section}, 
+          -lines {c.line_start}-{c.line_end}" for c in citations]        
+      341 +        by_passage: dict[str, list[int]] = {}  # one source li
+          +ne per passage, with every marker that cites it               
+      342 +        for c in citations:                                   
+      343 +            markers_here = by_passage.setdefault(f"{c.file}, {
+          +c.section}, lines {c.line_start}-{c.line_end}", [])           
+      344 +            if c.marker not in markers_here:                  
+      345 +                markers_here.append(c.marker)                 
+      346 +        source_lines = ["".join(f"[{n}]" for n in ns) + f" {wh
+          +ere}" for where, ns in by_passage.items()]                    
+      347      timings, usage = req.totals()
+      348      return AskResponse(
+      349          answer=_answer_text(prose, cautions, source_lines),
+
+● Update(tests/test_pipeline.py)
+  ⎿  Added 22 lines, removed 7 lines
+      184      assert dangling_markers(r.answer, {1}) == [] and "Moon dus
+           t" not in r.answer
+      185  
+      186  
+      187 -def test_a_failed_worker_does_not_fail_the_request():         
+      188 -    def broken(messages, info):                               
+      189 -        raise RuntimeError("model down")                      
+      187 +def broken(messages, info):                                   
+      188 +    raise RuntimeError("model down")                          
+      189  
+      191 -    writer, writes = scripted(Draft(answer="The documents lack
+          - this.", claims=[]))                                          
+      192 -    critic, _ = scripted(Review(verdicts=[], unmarked=[]))    
+      193 -    r = run(scripted(PLAN)[0], FunctionModel(broken), writer, 
+          -critic)                                                       
+      190 +                                                              
+      191 +def test_one_failed_worker_does_not_fail_the_request():       
+      192 +    two = PLAN.model_copy(update={"sub_questions": [*PLAN.sub_
+          +questions, SubQuestion(text="BROKEN", drugs=[])]})            
+      193 +    healthy, _ = researcher(WARFARIN_SECTION)                 
+      194 +                                                              
+      195 +    def play(messages, info):                                 
+      196 +        if "BROKEN" in str(messages[0].parts[-1].content):    
+      197 +            raise RuntimeError("model down")                  
+      198 +        return healthy.function(messages, info)               
+      199 +                                                              
+      200 +    writer, writes = scripted(ONLY_GOOD)                      
+      201 +    r = run(scripted(two)[0], FunctionModel(play), writer, scr
+          +ipted(supported(1))[0])                                       
+      202      assert "model down" in writes[0][0].parts[-1].content
+      195 -    assert r.sources == [] and r.answer.endswith(DISCLAIMER)  
+      203 +    assert r.sources == [WARFARIN.file]                       
+      204 +                                                              
+      205 +                                                              
+      206 +def test_the_request_fails_when_every_worker_fails():         
+      207 +    writer, writes = scripted(ONLY_GOOD)                      
+      208 +    with pytest.raises(PipelineError) as failure:             
+      209 +        run(scripted(PLAN)[0], FunctionModel(broken), writer, 
+          +scripted(supported(1))[0])                                    
+      210 +    assert failure.value.stage == "research" and not writes   
+
+● Bash(python3 - <<'EOF'
+      import re, pathlib…)
+  ⎿  ......................................................................
+     .. [ 80%]
+     ..................
+     … +2 lines (ctrl+o to expand)
+  ⎿  Found 17 new diagnostic issues in 2 files (ctrl+o to expand)
+
+● Three small review fixes are in and 90 tests pass; the first live answer came
+  back in 32 seconds with all ten claims supported. The full eleven-question run
+  is still going, and I'm tidying up while it finishes. · summary
+
+● Bash(git worktree remove .claude/worktrees/agent-a6d5c1b3cc5b565a7 --force
+      2>&1 | tail -1; git branch -D worktree-agent-a6d5c1b3cc5b565a7 2>&1 | tail
+      -1; git worktre…)
+  ⎿  Deleted branch worktree-agent-a6d5c1b3cc5b565a7 (was 2551510).
+     ~/applications/sntx/work-test/pharmag 1267f41 [main]
+     {
+     … +37 lines (ctrl+o to expand)
+
+● Bash(docker build -q -t agent . 2>&1 | tail -2 && docker image ls agent
+      --format '{{.Size}}')
+  ⎿  sha256:ee85bdbfaa75856ddb04f13fedbfe94ff83820f7a1af90bd8dc902f5ba0e05b
+     f
+     395MB
+
+● Image builds (395 MB). The eleven-question run is still going on the local
+  server, so I'm starting the container with the graders' command to check
+  /health, the page, and one real question there.
+
+● Bash(docker rm -f pharmag-poc >/dev/null 2>&1; docker run -d --name
+      pharmag-poc -p 8000:8000 --env-file .env agent >/dev/null && for i in
+      $(seq 1 60); do sleep 1; h=…)
+  ⎿  {"status":"ok","index":"ready"} after 5s
+     page 200 js 200 css 200
+     bad body 422
+     … +6 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; curl -s -w "\nHTTP
+      %{http_code} in %{time_…)
+  ⎿  HTTP 200 in 20.291866s
+     - Yes. Applying the label’s eGFR units (mL/min/1.73 m²), 25 is below 3
+     0, so metformin is contraindicated [1].
+     … +15 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cut -c1-330 "$S/live2.log")
+  ⎿  {
+       "id": "P1",
+       "status": 200,
+     … +112 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - "$S/live2" <<'EOF'
+      import json,…)
+  ⎿  ===== P2
+     - The overlapping contraindication categories are bleeding and hyperse
+     nsitivity: warfarin lists bleeding tendencies associated with active u
+     … +75 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cat > "$S/debug_draft.py"
+      <<'EOF'
+      """Run o…)
+  ⎿                   pydantic-ai v2.67.0 • Python 3.15.2
+
+           / \        agent: agent • model: openai:[redacted: chat model] • output:
+     … +130 lines (ctrl+o to expand)
+
+● Background command "Run all eleven eval questions against the live server"
+completed (exit code 0)
+
+● The comparison question's draft cited markers [8] to [10] with only 7 claims,
+  and the last-resort repair silently dropped those sentences. I'm fixing that
+  at the source and then checking the remaining eleven-question results. 
+  · summary
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; tail -5 "$S/live2.log" | cut
+      -c1-420; pyth…)
+  ⎿  {
+       "id": "C4",
+       "status": 200,
+     … +110 lines (ctrl+o to expand)
+
+● Bash(docker logs pharmag-poc 2>&1 | grep -c "pydantic-ai v" ; set -a; .
+      ./.env; set +a; host=$(python3 -c "import os,urllib.parse as u;
+      print(u.urlparse(os.environ['…)
+  ⎿  0
+     secrets in diff: 0
+     M  src/pharmag/pipeline.py
+     … +4 lines (ctrl+o to expand)
+
+● Bash(git commit -q -F - <<'EOF'
+      Fail the request when every worker fails, and group the source list…)
+  ⎿  ## main...origin/main
+     ?? ai-config/transcripts/
+     04c772a Fail the request when every worker fails, and group the source
+     … +8 lines (ctrl+o to expand)
+
+● builder(Fix writer marker consistency) Sonnet 5.5
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● The proof of concept is on main and passes all eleven eval questions, and a
+  builder is fixing three answer-quality defects, so I'm updating the docs next.
+  · summary
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; kill "$(cat
+      "$S/server.pid")"; sleep 1; cu…)
+  ⎿  /bin/bash: line 2: kill: (22169) - No such process
+     local server: 200
+     n 11 median s 23.3 max 67.5 min 1.4
+     … +14 lines (ctrl+o to expand)
+
+● Bash(ss -ltnp 2>/dev/null | grep ':8011' | sed -E 's/.*pid=([0-9]+).*/\1/' |
+      head -1)
+  ⎿  22175
+
+● Bash(kill 22175; sleep 1; curl -s -m 2 -o /dev/null -w "local server:
+      %{http_code}\n" localhost:8011/health; cd
+      ~/applications/sntx/work-test/pharmag && se…)
+  ⎿  local server: 000
+     [redacted: private notes]
+     [redacted: private notes]
+     … +37 lines (ctrl+o to expand)
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿   ai-config/README.md | 11 +++++++----
+      1 file changed, 7 insertions(+), 4 deletions(-)
+
+  Made 2 scratchpad edits +106 -1, listed 1 directory (ctrl+o to expand)
+
+● Still waiting on the fix builder. I'm updating docs/architecture.md to match
+  what was built so the docs are ready when the fixes land.
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿   ai-config/README.md  | 11 +++++++----
+      docs/architecture.md | 19 ++++++++++---------
+      2 files changed, 17 insertions(+), 13 deletions(-)
+
+● Docs are updated and the overview page is ready to take the final numbers. I'm
+  waiting for the fix builder's report; then I merge, rebuild the container,
+  rerun the eleven questions, and publish the overview.
+  ⎿  Stop says: ⏱ 3m 46s (finished 20:28:01)
+
+✻ Cogitated for 11m 14s · done Thursday 19:28
+
+› Message from marker-fix-builder
+  All three defects are fixed on the worktree branch, and `uv run --locked
+  pytest -q` ends with `93 passed in 12.22s` (90 before, plus 3 new). I made no
+  live calls.
+
+  **Difficulty:** medium-low.
+
+  **Commits** (three, plain sentences, no attribution lines). The critic prompt
+  edit sits in the second commit with the writer validator, not in a commit of
+  its own.
+  - a20257b: Defect 2, in `src/pharmag/grounding.py`.
+  - 5ad02e5: Defects 1 and 3, in `src/pharmag/agents.py`,
+  `src/pharmag/pipeline.py` and `tests/test_pipeline.py`.
+  - cd4c19f: PROPERTIES lines 38 to 40.
+
+  **Defect 1, validator.** An `@writer.output_validator` raises `ModelRetry`.
+  The message names the marker numbers and the claim count and asks for the
+  missing claims or corrected markers.
+
+  **Last-retry detection.** The docs and a test agree: inside an output
+  validator, `ctx.retry` is the number of output rejections so far and
+  `ctx.max_retries` is the budget. With `retries={"output": 2}`, calls see
+  `retry` 0, 1 and 2, and a raise at `retry == 2` fails the request. The
+  validator therefore raises only while `ctx.retry < ctx.max_retries` and lets
+  the draft through on the third call. The stubborn-writer test confirms it:
+  three writer calls, then an answer with `marker_check == "repaired"`.
+
+  **I had to change `pipeline.py`.** PydanticAI 2.67 raises `UserError: Cannot
+  set a custom run output_type when the agent has output validators`. The
+  `output_type=str` redaction call on `writer` therefore broke as soon as the
+  validator existed, and two existing tests failed.
+  - I added `redactor = Agent(output_type=str, instructions=WRITER_INSTRUCTIONS,
+  retries={"output": 2})` in `agents.py`.
+  - The redact stage now calls `redactor` and no longer passes
+  `output_type=str`. It keeps the role name "writer", so usage and models are
+  unchanged.
+  - The `str` pass-through branch is gone from the validator, since it can no
+  longer see a `str`.
+  - This is a three-line change in `pipeline.py`.
+
+  **Defect 1, tests.**
+  - `test_the_writer_repairs_markers_without_claims_inside_one_run`: two writer
+  calls, `marker_check == "passed"`, every sentence of the second draft kept. It
+  also checks that the retry message names the markers `[2, 3]` and the claim
+  count.
+  - `test_a_stubborn_marker_mismatch_still_answers_and_is_repaired`: three
+  writer calls, `repaired`, no dangling marker.
+  - The existing redaction tests pass unchanged.
+
+  **Defect 2.** `drop_dangling` splits as before, then moves any run of markers
+  at the start of a fragment back onto the sentence before it. This handles
+  `illness. [1][2]` and `illness. [1] [3] Next`. It preserves text and
+  whitespace exactly. The example test is
+  `test_markers_after_the_final_punctuation_go_with_their_sentence`. The
+  existing Hypothesis property still holds and still describes the behaviour, so
+  I left its line (28) alone. Its generator only puts markers before the full
+  stop, so the new example test is what covers the trailing case.
+
+  **Defect 3.** I added one paragraph to `CRITIC_INSTRUCTIONS` after the
+  ambiguous rule, in the same calm style and with the reason. When a claim says
+  the documents agree ("shared", "common to both", "the same", "both" list it)
+  and the passages word the item differently, the verdict is ambiguous and the
+  reason quotes both wordings. A claim that only sets each document's wording
+  side by side stays supported. No capitals, and the existing rules are
+  untouched. It is untested offline, as agreed.
+
+  **PROPERTIES.md.** I added lines 38, 39 and 40 for the two pipeline tests and
+  the grounding example.
+
+  **Decided myself.**
+  - The separate `redactor` agent, as above.
+  - I did not add a Hypothesis variant for trailing markers.
+
+  **Other.** `ruff check` reports one unused import, `DISCLAIMER` in
+  `src/pharmag/api.py`. It was already there and I left it.
+
+  **Snags**
+  - The docs say "the budget defaults to 1" and describe `ctx.retry`, but they
+  say nothing about the incompatibility between validators and run-level
+  `output_type`. I found it only when the tests failed.
+  - The brief said the redaction run "calls the same agent with
+  `output_type=str`" and should pass through the validator. That cannot work in
+  2.67.
+
+  **Wants**
+  - A docs note on the validator and `output_type` conflict.
+
+  **Distress:** none.
+
+● Bash(git worktree list | tail -1; B=$(git worktree list | tail -1 | sed -E
+      's/.*\[(.*)\].*/\1/'); echo "$B"; git diff main...$B -- src/ | head -150)
+  ⎿  ~/applications/sntx/work-test/pharmag/.claude/worktrees/agen
+     t-adf471a6d8b71c2f9 cd4c19f [worktree-agent-adf471a6d8b71c2f9]
+     worktree-agent-adf471a6d8b71c2f9
+     … +107 lines (ctrl+o to expand)
+
+● Agent "Fix writer marker consistency" finished · 2m 3s
+
+● Bash(git stash -q && git merge --no-ff -q worktree-agent-adf471a6d8b71c2f9 -m
+      "Merge the marker, sentence-split, and critic fixes into main" -m
+      "Claude-Session: http…)
+  ⎿  Deleted branch worktree-agent-adf471a6d8b71c2f9 (was cd4c19f).
+     93 passed in 12.37s
+      M ai-config/README.md
+     … +5 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; uv run --locked python
+      "$S/live_check.py"…)
+  ⎿  Running in the background (↓ to manage)
+
+● verifier(Verify pipeline against architecture) Sonnet 5.5
+
+● The fixes are merged with 93 tests passing, and the container is rebuilt. I'm
+  running the eleven questions against it and checking the page renders an
+  answer in a browser. · summary
+
+● Bash(ls ~/.cache/ms-playwright/; (npx --no-install playwright --version 2>&1 |
+      head -1); (python3 -c "import playwright; print('py playwright',
+      playwright.__version_…)
+  ⎿  b
+     chromium-1246
+     chromium_headless_shell-1246
+     … +4 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cat > "$S/page_check.py"
+      <<'EOF'
+      """Open t…)
+  ⎿  waiting text: Working. An answer can take a minute or more. 1 s elapse
+     d.
+     console errors: ['Failed to load resource: the server responded with a
+     … +14 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to ~/applications/sntx/work-test/pharmag
+
+  Read 1 file (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cut -c1-300 "$S/live3.log")
+  ⎿  {
+       "id": "P1",
+       "status": 200,
+     … +16 lines (ctrl+o to expand)
+
+● The page now works end to end in a real browser, with nothing loaded from
+  another host. The container run is slow on the second question, so I'm
+  checking its logs next. · summary
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; docker logs --timestamps
+      pharmag-poc 2>&1…)
+  ⎿  2026-11-12T19:29:01.641879909Z INFO:     192.168.65.1:21270 - "GET /he
+     alth HTTP/1.1" 200 OK
+     2026-11-12T19:29:02.649673258Z INFO:     192.168.65.1:47917 - "GET /he
+     … +16 lines (ctrl+o to expand)
+
+● Not stuck: the second question was simply still in flight (I misread the
+  elapsed time). The container run and the independent verifier are both in
+  progress. I'll continue when they report; next comes the final numbers into
+  the docs and the overview page.
+  ⎿  Stop says: ⏱ 2m 49s (finished 20:31:01)
+
+● Background command "Run all eleven eval questions against the rebuilt
+container" completed (exit code 0)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cut -c1-330 "$S/live3.log";
+      python3 - "$S/…)
+  ⎿  {
+       "id": "P1",
+       "status": 200,
+     … +205 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - "$S/live3" <<'EOF'
+      import json,…)
+  ⎿  C1 passed unmarked 0 cautions 0 total_s 11.6 {}
+     C2 passed unmarked 0 cautions 0 total_s 38.9 {'retry': 15}
+     C3 passed unmarked 0 cautions 0 total_s 69.7 {'retry': 26, 'redact': 3
+     … +15 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to ~/applications/sntx/work-test/pharmag
+
+  Read 1 file (ctrl+o to expand)
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - "$S" <<'EOF'
+      import pathlib, sys…)
+  ⎿  11/11 complete, median 26.2 s
+     2
+     1
+
+● Artifact("pharmag-overview.html")
+  ⎿  Published ⧉ https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den
+
+● The overview is published as a private page, and the post-fix container run
+  again answered 11 of 11 with all expected sources, with the comparison answer
+  keeping its three critic cautions. I'm committing and pushing that state, then
+  writing the handoff while the verifier finishes. · summary
+
+● Bash(set -a && . ./.env && set +a && host=$(python3 -c "import os,urllib.parse
+      as u; print(u.urlparse(os.environ['OPENAI_BASE_URL']).hostname)") && git
+      add -A . ':!a…)
+  ⎿  secrets: 0
+     ## main...origin/main
+     ?? ai-config/transcripts/
+     … +4 lines (ctrl+o to expand)
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Bash(cat >> ~/snags.md <<'EOF'
+      2026-11-12 | pharmag | snag | `setsid nohup uv run uvicorn ... & echo $!`
+      recorded the launcher's PID, not the server's; `kill` found…)
+  ⎿  2026-11-12 | pharmag | want | a committed page smoke test (jsdom or pl
+     aywright);
+     2026-11-12 | pharmag | want | a FunctionModel helper for scripted stru
+     … +52 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 -
+      "$S/live3/summary.json" <<'EOF'…)
+  ⎿  in 208207 cached 7678 out 36462
+     max in 59308 median in 10747
+     tools ['find_interactions', 'get_section', 'search_corpus']
+
+● Write(docs/handoff.md)
+  ⎿  Added 62 lines, removed 77 lines
+        1  # Handoff
+        2  
+        3 -Originally written on 2026-11-12 at the end of the first worki
+          -ng session. Updated on 2026-11-12 with the property-review res
+          -ults and their preservation for follow-up (DEC-030). The revie
+          -w and its preservation are not owner approval of the property 
+          -contracts or fixes, or a new architecture decision. Rewrite th
+          -is file before the next session stops.                        
+        3 +Rewritten on 2026-11-12 at the end of the second working sessi
+          +on. Rewrite this file before the next session stops.          
+        4  
+        5  The deadline is 2026-11-13 at 23:59 Casablanca time, which is 
+           22:59 UTC if Morocco is on UTC+1 that day. The graders assess 
+           the last commit pushed before it.
+        6  
+        7 +## Where things stand                                         
+        8 +                                                              
+        9 +A working proof of concept is on `main` and pushed (DEC-031). 
+          +It is the fallback submission. If nothing else lands, this sta
+          +te already meets the brief's hard constraints H1 to H12.      
+       10 +                                                              
+       11  ## Read these first
+       12  
+       13  | File | Why |
+       14  |---|---|
+       15  | `CLAUDE.md` | The working agreement. The owner decides, and 
+           every ruling is logged |
+       12 -| `docs/decisions.md` | The authority on what is decided, DEC-
+          -001 to DEC-030. Do not reopen a ruling |                      
+       13 -| `docs/architecture.md` | The approved design of the core: re
+          -quest flow, data shapes, modules, limits |                    
+       14 -| `docs/scoping.md` | The brief's constraints H1 to H18, their
+          - consequences I1 to I6, and the risks |                       
+       15 -| [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_finding
+          -s.md) | Authoritative detailed property review: F01–F16, with 
+          -7 HIGH and 9 MEDIUM finding groups. Read before proposing prop
+          -erty changes |                                                
+       16 -| `defense-brief.md` | Private and gitignored. Evidence E1 to 
+          -E13, proxy details, and the defense of each ruling. Add to it 
+          -with every decision and measurement |                         
+       17 -| `ai-config/README.md` | Manifest of skills, MCP servers, age
+          -nts, and plugins. Add a row when a session first uses a skill 
+          -or an MCP server, and copy the skill into `ai-config/skills/` 
+          -|                                                             
+       16 +| `docs/decisions.md` | The authority on what is decided, DEC-
+          +001 to DEC-031. Do not reopen a ruling. DEC-031 lists six choi
+          +ces the assistant made that the owner can still veto |        
+       17 +| `docs/architecture.md` | The design of the core, updated to 
+          +match what was built |                                        
+       18 +| `docs/scoping.md` | The brief's constraints H1 to H18, their
+          + consequences, and the risks |                                
+       19 +| [`tests/PROPERTIES_findings.md`](../tests/PROPERTIES_finding
+          +s.md) | The review of the first 47 properties, F01 to F16. Rea
+          +d before proposing property changes |                         
+       20 +| `defense-brief.md` | Private and gitignored. Evidence E1 to 
+          +E14, proxy details, and the defense of each ruling. Add to it 
+          +with every decision and measurement |                         
+       21 +| `ai-config/README.md` | Manifest of skills, MCP servers, age
+          +nts, and plugins. Add a row when a session first uses a skill 
+          +or an MCP server |                                            
+       22  
+       23  ## What exists on main
+       24  
+       21 -Everything below is merged, pushed, and covered by 67 passing 
+          -tests (`uv run --locked pytest -q`).                          
+       25 +Everything below is merged and pushed. 93 tests pass with no n
+          +etwork (`uv run --locked pytest -q`).                         
+       26  
+       23 -- **Skeleton.** `config.py` (strict config check), `api.py` (`
+          -/health`, a placeholder `/ask`, the static page), `Dockerfile`
+          -, `.dockerignore`. Verified with the graders' exact commands o
+          -n 2026-11-11.                                                 
+       24 -- **Corpus parser.** `corpus.py` cuts the 21 files into 451 ch
+          -unks on the heading tree, with a cap of 5,000 characters.     
+       25 -- **Search index.** `index.py` holds embeddings in a NumPy arr
+          -ay and BM25 through `bm25s`, and fuses the two rankings.      
+       26 -- **Tools.** `tools.py` has `search_corpus`, `get_section`, `f
+          -ind_interactions`, and `lookup_glossary` as plain functions. B
+          -rand names and class terms come from the corpus.              
+       27 -- **Retrieval eval.** `evals/retrieval_eval.py` and its result
+          - in `evals/results/retrieval.json`.                           
+       28 -- **Eval questions.** `evals/questions.json`, 11 questions wit
+          -h expected sources, gold line ranges, and key facts.          
+       27 +- **Corpus, index, tools.** Unchanged since the first session:
+          + 451 heading-tree chunks, hybrid exact search, four tools.    
+       28 +- **Type contract.** `models.py` holds what each LLM role retu
+          +rns and what `/ask` returns.                                  
+       29 +- **Agents.** `agents.py` has the planner, the worker with its
+          + four tool wrappers, the writer, the critic, and a redactor th
+          +at shares the writer's prompt and model. The writer has an out
+          +put validator: a draft whose prose uses a marker with no claim
+          + goes back to the writer inside the same call.                
+       30 +- **Grounding.** `grounding.py` has the quote check and the ma
+          +rker checks as pure functions.                                
+       31 +- **Pipeline.** `pipeline.py` runs stages 1 to 8 with the limi
+          +ts of DEC-026, records tokens per role, and emits trace events
+          +.                                                             
+       32 +- **API.** `api.py` builds the engine in the background, repor
+          +ts `building`, `ready`, or `failed` in `/health`, and routes `
+          +/ask` through the pipeline. A failed stage gives 502. A failed
+          + index build gives 503, and the next question starts the build
+          + again.                                                       
+       33 +- **Config.** The four `PHARMAG_*_MODEL` overrides, checked as
+          + strictly as the required variables.                          
+       34 +- **Page.** Plain. It shows the answer, the sources, and four 
+          +collapsed blocks: evidence, plan, tool calls, critic.         
+       35 +- **README and `.env.example`.** Run commands, endpoints, vari
+          +ables. No eval numbers yet.                                   
+       36  
+       30 -Not built yet: `agents.py`, `grounding.py`, `pipeline.py`, the
+          - real `/ask`, `/ask/stream`, the index build at startup, the U
+          -I beyond a question box, the answer eval with DeepEval, the RE
+          -ADME, and an `.env.example`.                                  
+       37 +Not built yet: `/ask/stream` and a page that uses it, the desi
+          +gn pass, the answer eval with DeepEval, a time cap per request
+          +, and the presentation outline.                               
+       38  
+       39 +## How the proof of concept was checked                       
+       40 +                                                              
+       41 +- **Container.** `docker build -t agent .` gives a 395 MB imag
+          +e. With `[assignment text removed, p. 2]`, `/hea
+          +lth` reports `ready` 5 to 7 seconds after start, the page and 
+          +its two assets return 200, and a body with no `question` retur
+          +ns 422.                                                       
+       42 +- **Eleven eval questions against the container**, one run eac
+          +h. All eleven returned 200 with every expected source file. P2
+          + also cited one file outside its expected and allowed lists (`
+          +medlineplus-apixaban.md`). The median time was 26 seconds, fro
+          +m 2 to 72. Four questions took the retry round, two had a clai
+          +m removed, and P2 carries three cautions.                     
+       43 +- **The page in a real browser.** Headless Chrome asked a ques
+          +tion through the page. The answer, the sources, and the four b
+          +locks rendered, and no request went to another host. `/favicon
+          +.ico` returns 404.                                            
+       44 +- **What limits those numbers.** One run per question. The exp
+          +ected sources of C1 to C7 are our own. The expected answers ar
+          +e still drafts. Times depend on the proxy and on the model the
+          + graders configure.                                           
+       45 +                                                              
+       46  ## What waits on the owner
+       47  
+       34 -Raise these at the start of the next session. The first three 
+          -block work.                                                   
+       48 +Each item has a date the owner is as likely to miss as to meet
+          +.                                                             
+       49  
+       36 -1. **Check-in before the agents (DEC-028).** Show the retrieva
+          -l numbers below and get the go-ahead for the agents step.     
+       37 -2. **Expected answers.** `evals/questions.json` still says "Dr
+          -aft". The owner confirms each expected answer, or corrects it.
+       38 -3. **Properties.** `tests/PROPERTIES.md` lists 47 properties i
+          -n six sections. The owner's rule is to confirm each one. On 20
+          -26-11-12 the owner requested evaluation of all 47 entries, not
+          - approval. [`tests/PROPERTIES_findings.md`](../tests/PROPERTIE
+          -S_findings.md) is the authoritative detailed review. DEC-030 a
+          -pproves preserving it and this handoff pointer only. Its propo
+          -sed improvements and unresolved contract choices await owner c
+          -onfirmation; the catalogue, tests, and production code are unc
+          -hanged.                                                       
+       39 -4. **Choices the assistant made that the owner can veto.** Pyt
+          -hon 3.15. `bm25s` for BM25. `httpx2` as the test client depend
+          -ency. A 503 from `/ask` on a config error. The four `OPENAI_*`
+          - variables as the required fields. This handoff file being tra
+          -cked and public.                                              
+       50 +1. **The six choices in DEC-031.** Veto or accept each. The fi
+          +rst one matters most: code appends the cautions, a numbered so
+          +urce list, and the disclaimer to the `answer` text. By 2026-11
+          +-13, 10:00.                                                   
+       51 +2. **Expected answers.** `evals/questions.json` still says "Dr
+          +aft". Confirm or correct each. This blocks the answer eval. By
+          + 2026-11-13, 11:00.                                           
+       52 +3. **Properties.** `tests/PROPERTIES.md` now lists the first 4
+          +7 entries plus C7, C8, S14 to S18, and 25 to 40. The owner's r
+          +ule is to confirm each one. The proposals of F01 to F16 also w
+          +ait. By 2026-11-13, 13:00.                                    
+       53 +4. **`ai-config/transcripts/2026-11-11a.txt`.** It is untracke
+          +d. It contains the proxy hostname three times, so this session
+          + did not commit it. The owner either redacts it and has it com
+          +mitted, or keeps it out of the repo. By 2026-11-13, 12:00.    
+       54 +5. **The built-in `artifact-diagramming` skill** is listed in 
+          +the manifest without a copy, because it ships inside Claude Co
+          +de with no license that permits one. The working agreement say
+          +s to copy each used skill. Accept or overrule. By 2026-11-13, 
+          +12:00.                                                        
+       55 +6. **Earlier choices the owner can veto.** Python 3.15. `bm25s
+          +`. `httpx2` as the test client dependency. A 503 from `/ask` o
+          +n a config error. This handoff file being tracked and public. 
+       56 +7. **The presentation overview.** A private page at <https://c
+          +laude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den>. Say whether a copy 
+          +belongs in the repo.                                          
+       57 +8. **The rehearsal and the summary email** are the owner's own
+          + tasks. Rehearse against a timer by 2026-11-13, 19:00. Send th
+          +e email with the repo link by 2026-11-13, 21:30.              
+       58  
+       59  ## Next steps, in order
+       60  
+       43 -Each step names the check that proves it.                     
+       61 +Each step names the check that proves it. Steps 1 and 2 raise 
+          +the grade most. Step 4 is required by the brief.              
+       62  
+       45 -1. **Rebuild the container on the merged tree.** Docker Deskto
+          -p was not running when the session ended, so the image has not
+          - been rebuilt since the parser, index, and tools landed. Check
+          -: `docker build -t agent .`, then the run command with `.env`,
+          - then 200 from `/health` and `/ask` and the page at `/`.      
+       46 -2. **Agents and pipeline (DEC-005, DEC-006, DEC-007, DEC-021 t
+          -o DEC-026).** Add `pydantic-ai-slim[openai]` with an exact pin
+          -. Version 2.67.0 resolved together with the current pins on 20
+          -26-11-11. Add the types in `models.py`, the four agents with t
+          -he `PHARMAG_*_MODEL` overrides, `grounding.py`, and `pipeline.
+          -py`. Wire `api.py`: build the index in the background at start
+          -up, report its state in `/health`, make `/ask` wait for it, an
+          -d add `/ask/stream`. Checks:                                  
+       47 -   - Property tests for the quote check and the marker check. 
+       48 -   - A test that plants an unsupported claim and sees the crit
+          -ic path remove it, with a fake model and no network.          
+       49 -   - The four public questions answered end to end in the cont
+          -ainer, with every expected source file in `sources`.          
+       50 -3. **Answer eval with DeepEval (DEC-015).** A script that call
+          -s the live API for the 11 questions and reports source recall 
+          -and precision, key-fact coverage, the DeepEval metrics, latenc
+          -y, and tokens per question. DeepEval is a development-only dep
+          -endency. If it has no Python 3.15 wheels, run it from its own 
+          -environment, since it only calls the API over HTTP. Check: a r
+          -esults file, and the limits of each number stated beside it.  
+       51 -4. **Interface (DEC-013).** Show the answer with its markers, 
+          -the sources with the cited passage, the plan, the tool calls, 
+          -and the critic's flags, fed by the streaming endpoint. Then th
+          -e design pass with the `impeccable` skill. Check: the page wor
+          -ks in the container with no request to another host.          
+       52 -5. **Submission polish.** README with the run commands and the
+          - eval numbers, `.env.example` with unquoted values, a secret s
+          -can of the whole tree, the presentation outline from section 1
+          - of the private brief, and a draft of the summary email for th
+          -e owner. Check: a clean clone builds and answers.             
+       63 +1. **Answer quality on the public questions.** P3's answer is 
+          +correct but thin: two or three sentences. The planner made one
+          + sub-question where the prompt allows one per drug as well. Ch
+          +eck: P3 cites warfarin sections 7.3 and 2.4 and sertraline sec
+          +tions 5.3 and 7.1, three runs in a row.                       
+       64 +2. **Answer eval with DeepEval (DEC-015).** The session's thro
+          +waway script already posts the eleven questions and compares t
+          +he sources. Its logic belongs in `evals/`: source recall and p
+          +recision, key-fact coverage, the DeepEval metrics, latency, an
+          +d tokens per question. DeepEval is a development-only dependen
+          +cy. If it has no Python 3.15 wheels, run it from its own envir
+          +onment, since it only calls the API over HTTP. Check: a result
+          +s file, the limits of each number stated beside it, and the nu
+          +mbers in the README.                                          
+       65 +3. **Interface (DEC-012, DEC-013).** Add `/ask/stream`, which 
+          +sends each `TraceEvent` and ends with the full response. The p
+          +ipeline already emits the events. Then the page shows progress
+          + per stage, and the `impeccable` skill handles the design pass
+          +. Add a favicon. Check: the page works in the container with n
+          +o request to another host, in a real browser.                 
+       66 +4. **Submission polish.** A secret scan of the whole tree, the
+          + presentation outline from section 1 of the private brief, a d
+          +raft of the summary email, and a clean clone that builds and a
+          +nswers. Check: `git clone`, the two documented commands, and o
+          +ne question, on a path with no `.env` history.                
+       67 +5. **Latency and limits (DEC-012, DEC-026).** A retry round ad
+          +ds 15 to 26 seconds. The slowest question took 72 seconds. Set
+          + a time cap per request from these measurements, and decide wh
+          +ether six workers and ten tool calls stay. Check: the cap is a
+          + named constant with a test, and the owner has ruled on the li
+          +mits.                                                         
+       68 +6. **Property-review follow-ups.** Only after the owner rules 
+          +on item 3 above. Work through F01 to F16 by severity, and upda
+          +te `tests/PROPERTIES.md` and the tests together.              
+       69  
+       54 -## 2026-11-12 property-review results                         
+       55 -                                                              
+       56 -The owner asked for all 47 catalogue entries to be evaluated f
+          -or tautology, discrimination, orthogonality, generator relevan
+          -ce, and shrinking. This was a review request, not approval of 
+          -the properties or a new architecture decision. The catalogue, 
+          -tests, and production code were not changed.                  
+       57 -                                                              
+       58 -The authoritative detailed review is [`tests/PROPERTIES_findin
+          -gs.md`](../tests/PROPERTIES_findings.md): **F01–F16, 7 HIGH an
+          -d 9 MEDIUM finding groups**. It distinguishes executed targete
+          -d mutation probes from inspection-based findings. The summary 
+          -below does not replace it.                                    
+       59 -                                                              
+       60 -During the initial review, main verified the baseline with `UV
+          -_CACHE_DIR=/tmp/pharmag-review-uv-cache uv run --locked --offl
+          -ine pytest -q`: **67 passed**. Main also ran **five separate i
+          -n-memory mutants**. Each mutant survived its corresponding sui
+          -te: the tests still passed. No baseline or mutation probes wer
+          -e rerun during the subsequent docs-only preservation turn (DEC
+          --030).                                                        
+       61 -                                                              
+       62 -- Successful `/ask` response includes the API key: `test_api`,
+          - **11 passed**.                                               
+       63 -- Doubled BM25 contribution to rank fusion: `test_index`, **11
+          - passed**.                                                    
+       64 -- Cache stores only in memory, not on disk: `test_retrieval_ev
+          -al`, **7 passed**.                                            
+       65 -- Window size reduced to `max(overlap + 1, size - 1)`: `test_r
+          -etrieval_eval`, **7 passed**.                                 
+       66 -- Parser cap raised from 5,000 to 50,000 characters: `test_cor
+          -pus`, **17 passed**.                                          
+       67 -                                                              
+       68 -These were targeted mutation probes, not a full mutation campa
+          -ign or evidence of production bugs. They expose gaps in what t
+          -he current suites discriminate.                               
+       69 -                                                              
+       70 -Existing strengths include conservation (14), fidelity (15), d
+          -isjointness (16), the independent line oracle (R4), T1 selecti
+          -on, and T3 symmetry. The properties are generally orthogonal. 
+          -Most generators shrink well, but sampling the real corpus does
+          - not make its document structure shrinkable.                  
+       71 -                                                              
+       72 -During the initial review, the skill copy in `ai-config/skills
+          -/property-based-testing/` and its manifest row in `ai-config/R
+          -EADME.md` were added and remain uncommitted. That initial revi
+          -ew made no decisions-log or defense-brief edits; subsequent pr
+          -eservation is recorded in DEC-030 and E13. No skill or MCP ser
+          -ver was used during preservation. No commits or pushes were ma
+          -de during either turn.                                        
+       73 -                                                              
+       74 -## Next review actions — proposals, not approved              
+       75 -                                                              
+       76 -These review actions supplement, and do not replace or authori
+          -ze, the implementation steps above. The agents check-in, expec
+          -ted-answer confirmation, and property approval blockers remain
+          -.                                                             
+       77 -                                                              
+       78 -1. **Read the findings first.** Start with [`tests/PROPERTIES_
+          -findings.md`](../tests/PROPERTIES_findings.md), the authoritat
+          -ive detailed review, not just this summary.                   
+       79 -2. **Clarify the owner's contracts before changes.** Take the 
+          -unresolved contract questions and proposed fixes to the owner.
+          - DEC-030 approves recording the review only; it settles none o
+          -f those questions and authorizes no fixes.                    
+       80 -3. **Follow severity and stable IDs.** After owner approval, w
+          -ork through the 7 HIGH and then 9 MEDIUM finding groups using 
+          -their stable IDs F01–F16. Update `tests/PROPERTIES.md` and the
+          - corresponding tests together for each approved change; produc
+          -tion changes also require owner approval. Keep executed target
+          -ed probes distinct from inspection-only findings when recordin
+          -g follow-up checks.                                           
+       81 -                                                              
+       82 -The existing proposal summary follows; use the detailed findin
+          -gs for the full scope and evidence.                           
+       83 -                                                              
+       84 -1. **Security wording and success-path checks.** Fix property 
+          -3: a literal prohibition on any protected value appearing as a
+          - substring is impossible for arbitrary values, including the e
+          -mpty string. Ask the owner to settle the protected-value non-d
+          -isclosure wording; do not choose the contract here. Add a secr
+          -et-absence assertion for successful `/ask` responses once that
+          - contract is agreed.                                          
+       85 -2. **Independent tool and index witnesses.** Use independent f
+          -ixture oracles for brands and glossary entries (T6/T7), rather
+          - than deriving the expected universe from the system under tes
+          -t. Guarantee independent positive ranking and interaction witn
+          -esses (I1–I4, T2/T3). Avoid I4 returning early on any collisio
+          -n and thereby skipping its ranking assertion.                 
+       86 -3. **Parser thresholds and structure.** Pin the expected cap i
+          -ndependently of the production constant. Generate 4,999/5,000/
+          -5,001-character cases and oversized lines, plus heading-level-
+          -6 and multifile cases.                                        
+       87 -4. **Retrieval geometry and cache sequences.** Strengthen exac
+          -t fixed-window geometry (R1–R4) and nonempty/completeness chec
+          -ks (R5). Model cache sequences with mixed hits, reconstruction
+          -, and model switching; use model-tagged outputs so cross-model
+          - reuse is observable.                                         
+       88 -5. **API and static-page coverage.** Expand the partial-config
+          -uration/invalid-body cross product. Add configuration cases fo
+          -r HTTP, short values, and whitespace-only values. Strengthen s
+          -tatic locality and asset-wiring checks.                       
+       89 -6. **Index generators and unresolved contracts.** Add signed, 
+          -zero, tied, and empty index inputs. Ask the owner to settle ze
+          -ro-vector behavior: I5 claims unit vectors, while the code ret
+          -ains zero vectors. Also ask about negative `k`, invalid batchi
+          -ng, and invalid concurrency where their behavior is unspecifie
+          -d. These are contract questions, not decisions made by the rev
+          -iew.                                                          
+       90 -                                                              
+       70  ## Facts the code does not show
+       71  
+       93 -- **The retrieval numbers.** One live run over 13 gold files, 
+          -with the raw question as the query. Recall at 6 is 0.92 for th
+          -e heading-tree chunks and 0.69 for 1,000-character windows. Wi
+          -th a drug filter, recall at 3 is 0.85 against 0.69. One gold f
+          -ile is 7.7 points, and a larger chunk is easier to hit, so rea
+          -d the gap as an indication.                                   
+       94 -- **Why `find_interactions` exists.** No search mode finds the
+          - warfarin table row that names ibuprofen (question C3). The wo
+          -rker's prompt has to make that tool the obvious choice for a t
+          -wo-drug question, without fixing the tool order in code.      
+       95 -- **The config is strict (DEC-014).** A quoted, missing, or mi
+          -sspelled variable makes `/ask` return 503. The local `.env` is
+          - corrected. Run anything live with `uv run --locked --env-file
+          - .env ...`. The per-role override variables need the same chec
+          -k when they are added.                                        
+       96 -- **The proxy, in outline.** The SDK paths work on the base UR
+          -L with no `/v1` suffix. Tool calls, several tool calls in one 
+          -turn, strict JSON schema output, `temperature: 0`, and `reason
+          -ing_effort` are all accepted. Small chat calls take 1 to 5 sec
+          -onds. The private brief has the details.                      
+       97 -- **Libraries moved after the model's training data.** Starlet
+          -te's test client needs `httpx2`. The `openai` SDK is on versio
+          -n 3. PydanticAI is on 2.67, and the docs read so far were for 
+          -2.0.0. Read current docs through context7 before coding agains
+          -t any of them.                                                
+       98 -- **A flaky property test can be a false property.** The index
+          - test "a chunk's own text returns it first" failed one run in 
+          -six because rank fusion does not guarantee it. The code was ri
+          -ght. Ask whether the property is true before changing code.   
+       99 -- **`GLOSSARY.md` uses Windows line ends.** The parser drops t
+          -hem. A quote check should still compare text with whitespace n
+          -ormalized.                                                    
+       72 +- **`lookup_glossary` was never called** in the eleven questio
+          +ns. Workers chose among the other three tools. Expect the ques
+          +tion "is the fourth tool needed?".                            
+       73 +- **The critic did not use "ambiguous"** until one paragraph w
+          +as added to its prompt, about claims that say two documents ag
+          +ree while the passages word the item differently. P2 now carri
+          +es three cautions, which may be one or two too many.          
+       74 +- **PydanticAI 2.67 refuses a run-level `output_type`** on an 
+          +agent that has output validators. That is why the redaction ha
+          +s its own agent. Inside an output validator, `ctx.retry` count
+          +s the rejections so far and `ctx.max_retries` is the budget.  
+       75 +- **The proxy reports cached input tokens on some calls only.*
+          +* The pipeline logs a warning when a role's cache hit rate fal
+          +ls by more than 0.25. The INFO usage lines do not reach the co
+          +ntainer log, because nothing configures logging.              
+       76 +- **The first full run hid a defect behind a green result.** A
+          +ll eleven questions had their expected sources, yet P2 had los
+          +t half its answer: the writer cited markers 8 to 10 with only 
+          +7 claims, and the last-resort repair dropped those sentences. 
+          +Check `critic.marker_check` and read the answers, not only the
+          + sources.                                                     
+       77 +- **The config is strict (DEC-014).** A quoted, missing, or mi
+          +sspelled variable makes `/ask` return 503. Run anything live w
+          +ith `uv run --locked --env-file .env ...`.                    
+       78 +- **The proxy, in outline.** The SDK paths work on the base UR
+          +L with no `/v1` suffix. Small chat calls take 1 to 5 seconds. 
+          +The private brief has the details.                            
+       79 +- **`GLOSSARY.md` uses Windows line ends.** The parser drops t
+          +hem, and the quote check compares text with whitespace normali
+          +zed.                                                          
+       80 +- **A flaky property test can be a false property.** Ask wheth
+          +er the property is true before changing code.                 
+       81  
+       82  ## How the work ran, for the next session's planning
+       83  
+      103 -- The main session plans, briefs, reviews every diff, reruns e
+          -very check, merges, and pushes. Builders use the `builder` age
+          -nt definition at medium effort.                               
+      104 -- Parallel builders each get `isolation: "worktree"` and commi
+          -t on their own branch. A worktree has no `.env`, so a task tha
+          -t needs live calls runs in the main checkout. Give each builde
+          -r a different insertion point in `tests/PROPERTIES.md`, or the
+          - merge conflicts.                                             
+      105 -- The owner's plan has a 5-hour usage limit. It ended one buil
+          -der mid-task. That builder's files were complete in the workin
+          -g tree, so check the tree before redoing the work. Stop a runn
+          -ing agent with the `TaskStop` tool.                           
+       84 +- The main session wrote the type contract first, as signature
+          +s with no body, and pushed it. Two builders then worked in par
+          +allel worktrees against it with no merge conflict. A third bui
+          +lder made the fixes. A verifier agent reviewed the result.    
+       85 +- `isolation: "worktree"` branches from the remote default bra
+          +nch, so push before dispatching. A worktree has no `.env`, no 
+          +brief, and no private notes, so a builder makes no live calls 
+          +and the brief must carry any fact from those files.           
+       86 +- Say in each brief that commit messages end with the session 
+          +link line. Three builders read "no co-author lines" as "no tra
+          +ilers" and left it out.                                       
+       87 +- Builders cannot run a long compound command with a heredoc i
+          +nside a worktree. They write files with the Write tool and run
+          + one command per call.                                        
+       88 +- `setsid nohup uv run uvicorn ... & echo $!` records the laun
+          +cher's PID, not the server's. Find the listener with `ss -ltnp
+          +` and kill that PID.                                          
+       89 +- A page check in a real browser needs no project dependency: 
+          +`uv run --no-project --with playwright python <script>` with `
+          +channel="chrome"` drives the installed Chrome.                
+       90 +- The owner's plan has a 5-hour usage limit. Check the working
+          + tree before redoing a builder's work.                        
+       91  - After a merge, remove the worktree with `git worktree remove
+           ` and delete the branch.
+      107 -- Before each commit, scan the staged diff for the key and the
+          - proxy hostname. Commit messages carry no co-author lines and 
+          -end with the session link line that the harness provides. Push
+          - after each verified step (DEC-020).                          
+       92 +- Before each commit, scan the staged diff for the key, the pr
+          +oxy hostname, and the model name. Push after each verified ste
+          +p (DEC-020).                                                  
+       93  - Tracked docs follow pstack's `technical-writing` and `unslop
+           ` skills, and stay free of the proxy hostname and of the brief
+           's own text. The four public questions are the one exception (
+           DEC-027).
+
+● The handoff is rewritten with tonight's state, the open owner items, and next
+  steps. I'm adding tonight's evidence to the private defense brief while the
+  verifier finishes its review.
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿   M docs/handoff.md
+     ?? ai-config/transcripts/
+     7
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Docs and the private brief are up to date. The only thing still open is the
+  independent verifier's review of the pipeline. I'll act on its findings when
+  it reports, then commit the handoff and give you the final summary.
+  ⎿  Stop says: ⏱ 3m 32s (finished 20:39:15)
+
+
+● Teammate @pipeline-verifier finished
+  Verdict: FAIL. The build follows the approved flow (stages 1 to 8, DEC-007,
+  012, 014, 021 to 026 and 031, and H1 to H12 by reading). All 93 tests pass.
+  But DEC-022 ("the user never receives a claim the system knows is
+  unsupported") has a proven path around it. I also found five medium bugs.
+
+  Nothing in the repo was touched, and nothing used the network. My proof
+  scripts and mutated copies of the code are in
+  /tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d873-c136
+  -46a8-a806-39a3d74fb507/scratchpad/ (proofs.py, mutate*.py). I simulated every
+  LLM with the tests' scripted models, so each result below shows what the code
+  does when the model misbehaves, not how often a real model does.
+
+  Findings
+
+  1. HIGH. The redactor's output is trusted, so an unsupported claim can ship.
+  pipeline.py:292-311.
+  - The only check after redaction is for dangling markers. If the redactor
+    drops [2] but keeps the sentence, nothing notices.
+  - Proof (P1): the redactor returns "Warfarin has contraindications [1].
+    Apixaban is contraindicated in moon dust allergy." The result has
+    marker_check: passed, critic.removed lists that claim, and the answer still
+    contains the moon-dust sentence.
+  - Proof (P2): the critic reports "Aspirin cures everything." in unmarked, and
+    a redactor that ignores it leaves it in the answer. Nothing re-checks it.
+  - Smallest fix:
+    - After redaction, find the sentences of draft.answer that carry an
+      unsupported marker or contain an unmarked string.
+    - If one of them (markers stripped, passed through grounding.normalize)
+      still occurs in the redacted prose, cut it out with the drop_dangling
+      splitter.
+    - Then set marker_check to repaired.
+    - About 10 lines.
+
+  2. MEDIUM. An outage in the retry round turns a complete answer into a 502.
+  pipeline.py:278 with _research at :170-171.
+  - If every retry worker fails, _research raises and the stage becomes
+    PipelineError("retry"). The first-round draft and verdicts are thrown away.
+  - Proof (P3): the first worker succeeds, the follow-up worker raises "429",
+    and the result is PipelineError stage=retry.
+  - DEC-007 says the answer "ships with the remaining flags shown".
+  - Fix: catch PipelineError around the retry stage and keep the first-round
+    draft/verdicts, so the redaction removes the unsupported claims. pairs is
+    only extended on success, so it stays consistent.
+
+  3. MEDIUM. An in-scope plan with zero sub-questions has no guard.
+  pipeline.py:265-269, models.py:32.
+  - Plan allows in_scope=True with an empty list. No worker runs and the writer
+    gets "Findings:" with nothing after it. With claims=[] the code checks
+    nothing, so only the critic's unmarked stands in the way.
+  - Proof (P5): 0 workers ran, and "Warfarin is safe for everyone and has no
+    contraindications." shipped with sources=[] and unmarked=[]. The scripted
+    critic stands in for a miss.
+  - Fix: add a model validator on Plan that rejects in_scope with no
+    sub-questions (PydanticAI retries the output), or fall back to
+    [SubQuestion(text=question, drugs=[])].
+
+  4. MEDIUM. A duplicate verdict for one claim is resolved in favour of the 
+  first. pipeline.py:216-218.
+  - Proof (P4): the critic returns [supported(1), unsupported(1)]. The final
+    status is supported, there is no retry and nothing is removed.
+  - Verdicts for claim numbers that don't exist are ignored without a crash
+    (P10). A claim with no verdict fails closed.
+  - Fix: keep the worst status per claim (unsupported over ambiguous over
+    supported).
+
+  5. MEDIUM. Worker error text goes into the writer prompt and the response is 
+  never scrubbed. pipeline.py:175, api.py:123.
+  - not_found gets f"…{type(r).__name__}: {r}" for each failed worker.
+  - Proof (P8): the key appears in the writer prompt. It reaches the answer only
+    if the writer repeats it. I simulated that and did not observe it.
+  - It needs a provider that echoes the full key and at least one worker that
+    survives.
+  - Only the 502 a
+    [result truncated — ask the agent for the rest via SendMessage]
+
+● The verifier found a real gap and four smaller ones, with proofs. The main
+  one: after the redaction, code only checks markers, so a redactor that drops a
+  marker but keeps the sentence would let an unsupported claim through. Its
+  report was cut off by a size limit, so I've asked it to save the full text to
+  a file before I brief the fixes.
+
+
+● Teammate @pipeline-verifier finished
+  /tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d873-c136
+  -46a8-a806-39a3d74fb507/scratchpad/pipeline-verification.txt
+
+  You have not seen these yet: 5 (medium, rest of it), 6 (medium), 7 (medium), 8
+  to 12 (low), 13 to 14 (low, unproven), plus the answers on questions 3 and 4,
+  the surviving mutations, Snags, Wants and Distress.
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; wc -c
+      "$S/pipeline-verification.txt"; awk…)
+  ⎿  9155 /tmp/claude-1000/~-applications-sntx-work-test-pharmag/
+     38b1d873-c136-46a8-a806-39a3d74fb507/scratchpad/pipeline-verification.
+     txt
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; n=$(grep -n "Worker error
+      text" "$S/pipeli…)
+  ⎿  5. MEDIUM. Worker error text goes into the writer prompt and the respo
+     nse is never scrubbed. pipeline.py:175, api.py:123.
+     - not_found gets f"...{type(r).__name__}: {r}" for each failed worker.
+     … +79 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿  secrets: 0
+     ## main...origin/main
+     ?? ai-config/transcripts/
+
+● builder(Harden pipeline per verifier findings) Sonnet 5.5
+  ⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)
+
+● Status while the last builder works:
+
+  - Pushed and working. main has the full pipeline, the API, the page and the
+    README. The container answers all eleven eval questions with every expected
+    source.
+  - Overview for your presentation. ⧉
+    https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den (private to you).
+  - In progress. An independent verifier proved one path where an unsupported
+    claim could survive the redaction, plus smaller defects. A builder is
+    closing those now with a test for each. The findings are already recorded in
+    docs/handoff.md as V1 to V14, so the pushed state is honest even if this
+    last step were cut short.
+
+  I'll merge, rebuild the container, rerun the four public questions, and push
+  when it reports.
+
+❯ while the builder is doing its thing send a subagent (you choose the model    
+  accordingly) to clean the transcript                                          
+  (./ai-config/transcripts/2026-11-11a.txt).                                      ⎿  Found 13 new diagnostic issues in 2 files (ctrl+o to expand)
+
+● builder(Redact session transcript for publication) Sonnet 5.5
+  ⎿  Found 13 new diagnostic issues in 2 files (ctrl+o to expand)
+
+● A sonnet agent is redacting the transcript (env values, proxy details, quoted
+  assignments, personal details) after backing up the raw file outside the repo,
+  and I picked sonnet because a missed leak in a public repo is costly. I'm
+  writing my own independent check of its output in the meantime. · summary
+
+  Made 1 scratchpad edit +87 (ctrl+o to expand)
+
+● Both agents are running: the hardening builder in its worktree, the transcript
+  cleaner on the one untracked file. My independent check for the cleaned
+  transcript is ready. I'll review each result when it reports; the cleaned
+  transcript stays uncommitted until you've seen the verification.
+  ⎿  Stop says: ⏱ 1m 36s (finished 20:47:11)
+
+› Message from hardening-builder
+  Difficulty: medium. All nine fixes (V1-V7, V9) and the seven guard tests are
+  in. The full suite passes: 112 tests, up from 93. I made no live calls.
+
+  Branch: the worktree at ~/applications/sntx/work-test/pharmag/.claud
+  e/worktrees/agent-a557b783c3be37d26 has two commits on top of d077cd6, 9c1aa01
+  and 62ddb1a. They are in `src/pharmag/pipeline.py`,
+  `src/pharmag/grounding.py`, `tests/test_pipeline.py`,
+  `tests/test_grounding.py` and `tests/PROPERTIES.md`.
+
+  **What changed per finding**
+  - **V1:** After the redaction, `pipeline.py` removes any sentence that still
+  contains a sentence of the draft carrying an unsupported marker, or one of the
+  critic's unmarked statements, and sets `marker_check` to `repaired`.
+  `grounding.py` gains `sentences_with` and `drop_sentences`, which compare with
+  markers stripped and through `normalize`. A `# shortcut:` comment says a
+  paraphrase is beyond code.
+  - **V2:** The retry stage is wrapped in `try/except PipelineError`. On failure
+  it logs a warning, keeps the first-round draft and verdicts, and goes on to
+  the redaction. Both a failing worker round and a failing revising writer are
+  tested.
+  - **V3:** An in-scope plan with no sub-questions researches the user's
+  question as the one sub-question.
+  - **V4:** When a claim has two verdicts, the worst status wins (unsupported
+  over ambiguous over supported). The test runs both orders.
+  - **V5:** A failed worker puts only the exception's type name into
+  `not_found`. The existing worker test now asserts the type name is present and
+  the message is not.
+  - **V6:** The splitter is now one `_sentences` function in `grounding.py`,
+  shared by `drop_dangling`, `sentences_with` and `drop_sentences`. A break
+  needs whitespace after `.`, `!` or `?` followed by an uppercase letter, a
+  digit, `[`, `(` or `- `. It never follows `e.g.`, `i.e.`, `St.`, `vs.` or
+  `Dr.`, and line breaks still end a sentence. The `# shortcut:` comment states
+  the new limit. The Hypothesis property now checks `result == " ".join(clean
+  sentences)`, with a unique `S<i>` token per sentence, so a version that only
+  strips marker tokens fails it.
+  - **V7:** When the final prose is empty, `NOTHING_SUPPORTED` replaces it: "The
+  documents did not support any claim for this question; the removed claims are
+  listed in the critic report."
+  - **V9:** Blank follow-ups and blank unmarked strings are ignored when queries
+  are built, so they start no retry round.
+  - **Guard tests:**
+    - A second citation of a claim is read by the quote check.
+    - A real chunk that no tool returned in this request fails the quote check,
+  tested in both `test_grounding.py` and the pipeline.
+    - An ambiguous verdict keeps the claim, lists it under `critic.cautions`,
+  and adds a `Cautions:` block.
+    - A persistent unmarked statement triggers the retry and then the redaction.
+    - A claim with no verdict is unsupported.
+    - `sources` leaves out the file of a claim whose marker is not in the final
+  prose.
+    - The quote check ignores Markdown emphasis and Unicode forms (ligature and
+  full-width digits).
+  - `tests/PROPERTIES.md`: item 28 is reworded for the stronger property, and
+  items 41 to 58 are new, each naming its test.
+
+  **Test run**
+  ```
+  $ uv run --locked pytest -q
+  ........................................................................ [
+  64%]
+  ........................................
+  [100%]
+  112 passed in 12.52s
+  ```
+
+  **Fixes checked by undoing them:** I mutated the code, ran
+  `tests/test_pipeline.py`, and restored it. The first run stopped at the first
+  failure each time (`-x`).
+  - V1: `test_a_redactor_that_drops_the_marker_but_keeps_the_sentence_does_not_g
+  et_it_through` fails.
+  - V2: `test_a_failed_retry_round_ships_the_first_draft_with_the_flags_redacted
+  [worker]` fails.
+  - V3, V4, V5, V7 and V9: each fails its own test.
+  - V6: the old splitter failed the strengthened property while I was writing it
+  (it flagged the `vs.` case). I did not rerun the old splitter against the
+  abbreviation example.
+  - The mutation script is `/tmp/claude-1000/~-applications-sntx-work-
+  test-pharmag/38b1d873-c136-46a8-a806-39a3d74fb507/scratchpad/mut_v.py`. It is
+  outside the repo.
+
+  **Decided myself**
+  - The abbreviation lookbehinds use `\b` (for example `(?<!\bvs\.)`), because
+  without it any word ending in "vs" counts as an abbreviation, which Hypothesis
+  found.
+  - Abbreviation matching is case-sensitive, so a lowercase `dr.` still breaks.
+  The Hypothesis sentence strategy excludes the word `vs`.
+  - The test double `scripted()` in `tests/test_pipeline.py` now raises an
+  `Exception` instance when one is in its outputs. The retry-writer-failure test
+  uses this.
+  - V9 filters only where the retry queries are built. A blank unmarked string
+  still sets the redaction flag, so a redaction call can run, but it removes
+  nothing.
+  - I did not touch `models.py`, `agents.py`, `api.py` or the docs.
+
+  **Limits and risks**
+  - V1 catches a sentence kept word for word, including one merged into a longer
+  sentence. A paraphrase gets through.
+  - A very short unmarked statement could also match a longer sentence that
+  contains it and remove that sentence.
+  - `docs/handoff.md` and `docs/decisions.md` are not updated, as they are
+  outside my files. V1-V7 and V9 are now closed, and V8 and V10-V14 are
+  untouched.
+
+  **Snags**
+  - A multi-line command with a heredoc was accepted once and refused the next
+  time ("too complex to verify"). I used the Edit and Write tools instead, which
+  worked.
+  - Hypothesis found the `vs.` abbreviation problem only when the strengthened
+  property ran. That is the system working, but the weak original property would
+  have hidden it.
+
+  **Wants**
+  - A refused command should say which part tripped the worktree check.
+
+  **Distress**
+  - None.
+
+● Bash(B=worktree-agent-a557b783c3be37d26; git log --oneline main..$B; git diff
+      main...$B -- src/)
+  ⎿  62ddb1a Close the pipeline gaps found by the independent review.
+     9c1aa01 Split sentences at abbreviations correctly and add the sentenc
+     e helpers for the redaction check.
+     … +174 lines (ctrl+o to expand)
+
+● Agent "Harden pipeline per verifier findings" finished · 6m 6s
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Bash(git merge --no-ff -q worktree-agent-a557b783c3be37d26 -m "Merge the fixes
+      for the independent review's findings into main" -m "Claude-Session:
+      https://claude.ai…)
+  ⎿  Deleted branch worktree-agent-a557b783c3be37d26 (was 62ddb1a).
+     112 passed in 12.78s
+     2
+     … +3 lines (ctrl+o to expand)
+
+● The hardening fixes are merged and 112 tests pass. The container is rebuilt
+  and ready, so I'm rerunning all eleven questions against it before pushing.
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; uv run --locked python
+      "$S/live_check.py"…)
+  ⎿  Running in the background (↓ to manage)
+
+● Bash(python3 - <<'EOF'
+      import pathlib, re…)
+  ⎿  52:| V1 | High | After the redaction, code checks only the markers. A
+     redactor that drops a marker and keeps its sentence, or ignores an unm
+     53:| V2 | Medium | When every worker of the retry round fails, the req
+     … +23 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿   docs/architecture.md |  4 ++--
+      docs/handoff.md      | 31 ++++++++++++++++---------------
+      2 files changed, 18 insertions(+), 17 deletions(-)
+
+● Docs now reflect the hardening fixes. I'm waiting on two things: the
+  eleven-question run against the hardened container, and the transcript
+  cleaner. I'll push once the run confirms nothing regressed, then verify the
+  cleaned transcript with my own script.
+  ⎿  Stop says: ⏱ 1m 28s (finished 20:49:32)
+
+● Background command "Run all eleven eval questions against the hardened
+container" completed (exit code 0)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; cut -c1-250 "$S/live4.log";
+      python3 - "$S/…)
+  ⎿  {
+       "id": "P1",
+       "status": 200,
+     … +134 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - <<'EOF'
+      import pathlib…)
+  ⎿  secrets: 0
+     ## main...origin/main
+     ?? ai-config/transcripts/
+     … +2 lines (ctrl+o to expand)
+
+● Artifact("pharmag-overview.html")
+  ⎿  Updated ⧉ https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿  1
+
+● Bash(cat >> ~/snags.md <<'EOF'
+      2026-11-12 | pharmag | snag | the lead's brief asked a verifier for a
+      text-only report; the hand-back was cut at the message size limi…)
+  ⎿  2026-11-12 | pharmag | want | a refused Bash command inside
+
+● The hardened state is pushed and the overview is republished at the same link
+  with the final numbers. The transcript cleaner is still working; I'll run my
+  own check on its result when it reports and tell you what I find before
+  anything is committed.
+  ⎿  Stop says: ⏱ 53.9s (finished 20:56:49)
+
+● Teammate @transcript-cleaner finished
+  The cleaned transcript passes every check I could script, but two of your done
+  criteria will fail on a naive script, and I made several judgment calls you
+  should read.
+
+  Difficulty: medium-high. The exact-string categories were easy. The hard part
+  was values broken across wrapped lines and the proxy-detail calls.
+
+  Read these first
+
+  1. Lines 114-115 will fail an email regex. They hold
+     git@github.com:<handle>/pharmag.git, an SSH remote, not an email address.
+     The brief's placeholder set has nothing for it, so I left it. Do you want
+     it masked? The handle is the git author name on the repo's public commits,
+     but it appears in no tracked file. Related: the git author emails on those
+     commits are not noreply addresses. I didn't print them.
+  2. Lines 60, 61 and 240 carry only the the owner replacement. They are ls
+     owner and group columns, so a check for "placeholder or ~" will flag them.
+  3. Variant spellings of the chat model name. The first mechanical pass missed
+     10 of them: [redacted: chat model] in four source titles, two background sentences,
+     and a name split across lines 872-873 by a wrap and a diff gutter. I found
+     them with a search that ignores spacing and line breaks. If you rerun your
+     own checks, use one that ignores separators.
+
+  Counts (file: 2757 lines before and after)
+
+  ┌────────────────────────────────────────────────────────┬───────────────┐
+  │                        Category                        │ Replacements  │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 1. Proxy host / API key / chat model / embedding model │ 3 / 0 / 4 / 1 │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 1. Variant spellings of the chat model                 │ 10            │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 2. Proxy or key details                                │ 13            │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 3. Assignment text                                     │ 0             │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 4. ~ to ~                                    │ 19            │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 4. ~ to ~ (mangled path)                     │ 10            │
+  ├────────────────────────────────────────────────────────┼───────────────┤
+  │ 4. the owner to the owner                                  │ 6             │
+  └────────────────────────────────────────────────────────┴───────────────┘
+
+  - API key: the key appears nowhere in the transcript. I searched for it and
+    for any 6+ character fragment of it. A 4-character fragment matches inside
+    "[redacted: proxy detail]" on lines 1892 and 2247.
+  - Category 3: the transcript never prints the brief, because the PDF read is
+    collapsed. Shared runs of 8 or more words with the brief: 0 before and 0
+    after. The public questions don't appear either.
+  - Email: no email address found. Neither the owner's full name nor the git
+    author email appears in the transcript. I searched for the git author names,
+    the git author emails and the LICENSE copyright holder, and only the owner and
+    the handle matched.
+
+  Diff summary
+
+  - 60 changed lines, with no line added or removed.
+  - 29 hold a bracketed placeholder, 28 hold only ~, and 3 hold only the owner.
+  - A strict check passed: each changed line equals its raw line with only the
+    allowed spans swapped.
+  - The raw copy is byte-identical to the original (sha256 starts b471be8d).
+  - git status shows only ?? ai-config/transcripts/. I ran no git add and no
+    commit.
+
+  Leftover overlaps with the brief
+
+  None at 8 or more words. The closest ones, at 5 or more:
+
+  ┌───────────┬──────────┬──────────────────────────────────────────────────┐
+  │   Lines   │ Shared   │                    What it is                    │
+  │           │  words   │                                                  │
+  ├───────────┼──────────┼──────────────────────────────────────────────────┤
+  │ 1920-1921 │ 7        │ "unsupported or clinically ambiguous claims      │
+  │           │          │ before the", the brief's critic requirement.     │
+  ├───────────┼──────────┼──────────────────────────────────────────────────┤
+  │ 2560      │ 7        │ The brief's docker run flags.                    │
+  ├───────────┼──────────┼──────────────────────────────────────────────────┤
+  │ 2601-2602 │ 6        │ "assess the last commit pushed before".          │
+  ├───────────┼──────────┼──────────────────────────────────────────────────┤
+  │ 77        │ 6        │ Corpus file names that the brief's table also    │
+  │           │          │ lists.                                           │
+  ├───────────┼──────────┼──────────────────────────────────────────────────┤
+  │ 181       │ 5        │ "push your AI coding configuration".             │
+  └───────────┴──────────┴──────────────────────────────────────────────────┘
+
+  I left all five. Lines 1920-1921 is the one to judge.
+
+  Spans I was unsure about
+
+  - Lines 139, 900-902: I redacted the proxy's model list and "[redacted: proxy detail] models"
+    (line 413). A count isn't a list, but it is a proxy detail.
+  - Lines 903-908: I redacted the chat and embedding models' hosting, token
+    limits and listed price as proxy details. I kept the capability flags on
+    lines 904-905 (function calling, structured output, reasoning, prompt
+    caching) as public model-card facts.
+  - Line 875: the key's length ([redacted: proxy detail]) is redacted.
+  - Line 1316: "total spend was [redacted: proxy detail]" is redacted, because your
+    brief names spend figures.
+  - Line 1308: 1,536 dimensions is kept. It hints at the embedding model family
+    but isn't part of its name.
+  - Lines 915 and 920: [redacted: chat model detail]
+    [result truncated — ask the agent for the rest via SendMessage]
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; uv run --locked python
+      "$S/verify_transcri…)
+  ⎿  == exact strings (case-insensitive), cleaned / raw
+       api key (full)                  0 / 0
+       api key (first 8 chars)         0 / 0
+     … +21 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - <<'EOF'
+      import subprocess…)
+  ⎿  first label length: [redacted: proxy detail] | tracked files that already contain it: ['ai-co
+     nfig/README.md:1', 'docs/architecture.md:4', 'docs/decisions.md:4', 'd
+     ocs/handoff.md:1', 'docs/scoping.md:10']
+     … +73 lines (ctrl+o to expand)
+
+● Bash(sed -n '914,915p;919,920p;1308p;1920,1921p;114,115p'
+      ai-config/transcripts/2026-11-11a.txt | cut -c1-200 | sed -E
+      's#(git@github.com:)[^/]+#\1<handle>#')
+  ⎿       origin  git@github.com:<handle>/pharmag.git (fetch)
+          origin  git@github.com:<handle>/pharmag.git (push)
+           36 -- Public background on the model: [redacted: chat model] is
+     … +13 lines (ctrl+o to expand)
+
+● Bash(S="/tmp/claude-1000/~-applications-sntx-work-test-pharmag/38b1d
+      873-c136-46a8-a806-39a3d74fb507/scratchpad"; python3 - <<'EOF'
+      import pathlib…)
+  ⎿        36 -- Public background on the model: [redacted: chat model] is
+     [redacted: chat model detail]
+              - [redacted: chat model detail] (third-party
+     … +16 lines (ctrl+o to expand)
+
+● Bash(python3 - <<'EOF'
+      import pathlib…)
+  ⎿  secrets: 0
+     ## main...origin/main
+     ?? ai-config/transcripts/
+     … +2 lines (ctrl+o to expand)
+
+● Your fallback is in place. main is pushed at b96f66b with a container that
+  meets the brief end to end, so tomorrow is polish.
+
+  What works, and how I checked it
+
+  - Container. With the graders' own build and run command, /health reports the
+    index ready within 5 to 16 seconds of start. The image is 395 MB.
+  - Eleven eval questions against the container, run twice. Both runs returned
+    200 with every expected source file. In the second run the median was 29
+    seconds, from 3 to 99.
+  - The page in headless Chrome. It asked a question and rendered the answer,
+    sources and trace, with no request to another host. That check ran before
+    the last round of fixes, which did not touch the page.
+  - Tests. 112 pass with no network.
+
+  What the checks caught
+
+  - A defect behind a green result. The first full run had every expected
+    source, yet the warfarin-against-apixaban answer had lost half its content.
+    The writer cited markers 8 to 10 with only 7 claims, and the last-resort
+    repair silently dropped those sentences. The writer now gets the mismatch
+    back within the same call.
+  - A path around the main promise. An independent verifier proved that an
+    unsupported claim could survive the redaction if the redactor dropped the
+    marker and kept the sentence. A builder fixed that and eight other findings,
+    each with a test that fails without the fix.
+  - Still open. Five low findings are listed in docs/handoff.md as V8 and V11 to
+    V14.
+
+  Presentation overview
+
+  ⧉ https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den is private to you. It has
+  one system map, where the brief's five steps land, why each tool exists, the
+  main challenges, and tonight's measured results.
+
+  Transcript
+
+  The cleaned ai-config/transcripts/2026-11-11a.txt is not committed, because
+  committing publishes it.
+
+  - Replaced: the four env values, the proxy's account details, your home path
+    and your name. 60 of 2,757 lines changed, each with a visible placeholder.
+  - My own check: none of the env values remain, and no run of 8 or more words
+    is shared with the brief.
+  - Left in on purpose: the repo's SSH remote with your GitHub handle, the
+    Africa/Casablanca time zone, the plan name on line 2, and session IDs in
+    temp paths.
+  - Raw copy:
+    ~/applications/sntx/work-test/2026-11-11a.transcript.raw.txt,
+    outside the repo.
+
+  Tell me to commit it, or name anything else to remove first.
+
+  Waiting on you
+
+  ┌───────────────────────────────────────────────────────────────┬─────────┐
+  │                             Item                              │ By (13  │
+  │                                                               │  Nov)   │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ The six choices in DEC-031. The main one is that code appends │         │
+  │  the cautions, a numbered source list and the disclaimer to   │ 10:00   │
+  │ the answer text                                               │         │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ Expected answers in evals/questions.json, still marked draft. │ 11:00   │
+  │  This blocks the answer eval                                  │         │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ How strict the quote check is: today a one-word quote passes  │ 12:00   │
+  │ (V8)                                                          │         │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ The transcript commit                                         │ 12:00   │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ Whether listing the built-in diagramming skill without a copy │ 12:00   │
+  │  is acceptable, since it has no license                       │         │
+  ├───────────────────────────────────────────────────────────────┼─────────┤
+  │ The properties in tests/PROPERTIES.md: the first 47, plus the │ 13:00   │
+  │  new C7, C8, S14 to S18 and 25 to 58                          │         │
+  └───────────────────────────────────────────────────────────────┴─────────┘
+
+  Tomorrow, in order
+
+  1. Thicken the warfarin-plus-sertraline answer, which is correct but only
+     three sentences.
+  2. Build the answer eval with DeepEval and put its numbers in the README.
+  3. Add the streaming endpoint and do the design pass on the page.
+  4. Do the submission polish, including a clean-clone build.
+
+  docs/handoff.md has the check for each step.
+
+  Guidance fixes to consider
+
+  Three snags repeated tonight; each fix is one line and yours to decide.
+
+  - Commit trailers. Three builders read "no co-author lines" as "no trailers"
+    and dropped the session line. The builder definition could say that commits
+    end with the session link line.
+  - Compound commands in worktrees. A heredoc inside a long command is refused
+    there. ~/CLAUDE.md could tell builders to use Write and one command per
+    call.
+  - Recorded PID. setsid nohup uv run … & echo $! records the launcher's PID,
+    not the server's. The quirk note could say to find the listener with ss 
+    -ltnp.
+
+  Not done or not checked: no clean-clone build yet, and no answer metric beyond
+  source files. Latency swings with the retry round: the same question took 26
+  seconds twice and 99 seconds once. The container is still running on port 8000
+  so you can try the page; docker rm -f pharmag-poc stops it.
+
+● Automatic replies were not resumed for 
+  https://claude.ai/artifact/Gh2KSEbR3sKLQwAMwj2den — switching 
+  conversations inside a session doesn't bring comment monitors back. 
+  Publish the Artifact again, or ask Claude to watch it, to turn its 
+  replies back on.

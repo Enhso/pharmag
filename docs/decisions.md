@@ -253,3 +253,4 @@ The session started with checks on the pushed proof of concept: a clean clone, a
 - **Decision.** The cleaned transcripts of the working sessions go into `ai-config/transcripts/`, and the ignore rule for that folder is removed. An agent cleans the transcript of the second session the way the first was cleaned, and nothing that should stay private is published. This replaces the transcript item of DEC-034.
 - **Owner's words.** "nothing that should stay private should be published", and "transparency is really important to me."
 - **Rejected.** Keeping the transcripts out of the repo, which was the recommendation accepted an hour earlier in DEC-034.
+- **No second check.** The owner told the assistant to take the cleaning agent's result as it is, to save usage: "trust the agent's work (blindly)." The main session ran no independent check of the cleaned files. The commit still ran the standing scan of the staged diff for the env values.

@@ -228,6 +228,3 @@ defense-brief.md
 
 # Embeddings cached by the eval scripts
 evals/.cache/
-
-# Session transcripts: not published (DEC-034)
-ai-config/transcripts/
